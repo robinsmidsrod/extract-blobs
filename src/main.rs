@@ -12,6 +12,8 @@ use std::{
 };
 
 mod alpha_channel;
+mod color_ops;
+mod drawing;
 mod io;
 
 #[derive(Parser, Debug)]
@@ -51,8 +53,8 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
     let mut imgb = img.to_rgba8();
 
     // Draw a thin border on color image with chroma key color
-    let chroma_key_color = parse_color_string(&chroma_key_color)?;
-    draw_border(
+    let chroma_key_color = color_ops::parse_color(&chroma_key_color)?;
+    drawing::draw_border(
         &mut imgb,
         chroma_key_color,
         0,
@@ -65,7 +67,7 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
 
     // Flood fill color image with chroma key color, making it transparent, with a fuzz factor
     let transparent = image::Rgba([0, 0, 0, 0]);
-    flood_fill(&mut imgb, 0, 0, chroma_key_color, transparent, 25.0);
+    drawing::flood_fill(&mut imgb, 0, 0, chroma_key_color, transparent, 25.0);
     io::save_rgba_image_as(&imgb, &base_path, "floodfilled")?;
 
     // Extract alpha channel from color image so we can clean it up
@@ -158,97 +160,6 @@ fn split_blobs(
         };
     }
     blobs
-}
-
-/// Parse a string into a color, with format like this #RRGGBB
-fn parse_color_string(color_string: &str) -> Result<image::Rgba<u8>, Box<dyn std::error::Error>> {
-    let color = color::parse_color(color_string)?;
-    let color: color::AlphaColor<color::Srgb> = color.to_alpha_color();
-    let color = color.to_rgba8();
-    let color = image::Rgba(color.to_u8_array());
-    Ok(color)
-}
-
-/// Draws a border into the specified image buffer with the specified color and thickness
-fn draw_border(
-    imgbuf: &mut image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
-    color: image::Rgba<u8>,
-    x: i32,
-    y: i32,
-    width: u32,
-    height: u32,
-    thickness: u32,
-) {
-    for offset in 0..thickness {
-        let border = Rect::at(x + offset as i32, y + offset as i32)
-            .of_size(width - offset * 2, height - offset * 2);
-        drawing::draw_hollow_rect_mut(imgbuf, border, color);
-    }
-}
-
-/// Figure out how similar two colors are based on euclidean distance in Lab colorspace
-fn color_similarity(a: &palette::Srgb<f32>, b: &palette::Srgb<f32>) -> f32 {
-    // Convert colors to Lab space for better perceptual similarity
-    let lab_a = palette::Lab::from_color(*a);
-    let lab_b = palette::Lab::from_color(*b);
-
-    // Calculate Euclidean distance in Lab space
-    let delta_e =
-        (lab_a.l - lab_b.l).powi(2) + (lab_a.a - lab_b.a).powi(2) + (lab_a.b - lab_b.b).powi(2);
-    let diff = delta_e.sqrt();
-    // println!("Colors {:?} and {:?} has a difference of {}", a, b, diff);
-    diff
-}
-
-/// Flood fill the replacemnt color where the target color fuzzed with tolerance is found, starting at coordinate
-fn flood_fill(
-    image: &mut image::ImageBuffer<image::Rgba<u8>, Vec<u8>>,
-    x: i32,
-    y: i32,
-    target_color: image::Rgba<u8>,
-    replacement_color: image::Rgba<u8>,
-    tolerance: f32,
-) {
-    let (width, height) = image.dimensions();
-
-    let target_color: palette::Srgb<f32> = palette::Srgb::new(
-        target_color[0] as f32 / 255.0,
-        target_color[1] as f32 / 255.0,
-        target_color[2] as f32 / 255.0,
-    );
-
-    let mut stack = vec![(x, y)];
-    let mut visisted = HashSet::new();
-
-    while let Some((cx, cy)) = stack.pop() {
-        // println!("Checking pixel at ({cx}, {cy}): stack is {stack:?}");
-        if cx < 0
-            || cx >= width as i32
-            || cy < 0
-            || cy >= height as i32
-            || !visisted.insert((cx, cy))
-        {
-            continue;
-        }
-
-        let pixel = image.get_pixel(cx as u32, cy as u32);
-        let current_color: palette::Srgb<f32> = palette::Srgb::new(
-            pixel[0] as f32 / 255.0,
-            pixel[1] as f32 / 255.0,
-            pixel[2] as f32 / 255.0,
-        );
-
-        if color_similarity(&current_color, &target_color) > tolerance {
-            continue;
-        }
-
-        image.put_pixel(cx as u32, cy as u32, replacement_color.into());
-
-        let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)];
-        for (dx, dy) in directions {
-            stack.push((cx + dx, cy + dy));
-        }
-    }
 }
 
 /// Compute skew angle, bounding box and rotation center from luma image
