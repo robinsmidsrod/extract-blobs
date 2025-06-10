@@ -12,6 +12,7 @@ use std::{
 };
 
 mod alpha_channel;
+mod io;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -60,32 +61,32 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
         img.height(),
         1,
     );
-    save_rgba_image_as(&imgb, &base_path, "border")?;
+    io::save_rgba_image_as(&imgb, &base_path, "border")?;
 
     // Flood fill color image with chroma key color, making it transparent, with a fuzz factor
     let transparent = image::Rgba([0, 0, 0, 0]);
     flood_fill(&mut imgb, 0, 0, chroma_key_color, transparent, 25.0);
-    save_rgba_image_as(&imgb, &base_path, "floodfilled")?;
+    io::save_rgba_image_as(&imgb, &base_path, "floodfilled")?;
 
     // Extract alpha channel from color image so we can clean it up
     let mut img_alpha = alpha_channel::extract(&imgb);
-    save_luma_image_as(&img_alpha, &base_path, "alpha")?;
+    io::save_luma_image_as(&img_alpha, &base_path, "alpha")?;
 
     // Remove specs and dust from alpha channel, trim outer edges slightly
     imageproc::morphology::erode_mut(&mut img_alpha, Norm::L1, 5);
     imageproc::morphology::dilate_mut(&mut img_alpha, Norm::L1, 3);
-    save_luma_image_as(&img_alpha, &base_path, "alpha-eroded")?;
+    io::save_luma_image_as(&img_alpha, &base_path, "alpha-eroded")?;
 
     // Replace alpha channel in the color image with the cleaned one
     alpha_channel::replace(&mut imgb, &img_alpha);
-    save_rgba_image_as(&imgb, &base_path, "floodfilled-with-clean-alpha")?;
+    io::save_rgba_image_as(&imgb, &base_path, "floodfilled-with-clean-alpha")?;
 
     // Extract individual blobs from the alpha channel
     let blobs = split_blobs(&img_alpha);
     let mut counter = 0u32;
     for blob in &blobs {
         let skew_angle = experiment_with_mask_image(&blob, &base_path, counter)?;
-        save_luma_image_as(&blob, &base_path, &format!("blob-{counter}")[..])?;
+        io::save_luma_image_as(&blob, &base_path, &format!("blob-{counter}")[..])?;
         let (_skew_angle, center) = compute_skew_angle_and_rotation_center(&blob);
         let skew_theta = skew_angle * std::f32::consts::PI / 180.0;
         println!("Computed skew angle: {skew_angle}");
@@ -99,7 +100,7 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
         );
         let img_mask_rotated_and_blurred =
             imageproc::filter::gaussian_blur_f32(&img_mask_rotated, 3.0);
-        save_luma_image_as(
+        io::save_luma_image_as(
             &img_mask_rotated_and_blurred,
             &base_path,
             &format!("blob-{counter}-deskewed")[..],
@@ -122,7 +123,7 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
             bounding_box.height(),
         )
         .to_image();
-        save_rgba_image_as(&imgb_cropped, &base_path, &format!("{counter}")[..])?;
+        io::save_rgba_image_as(&imgb_cropped, &base_path, &format!("{counter}")[..])?;
         counter += 1;
     }
 
@@ -157,30 +158,6 @@ fn split_blobs(
         };
     }
     blobs
-}
-
-/// Save grayscale image to file with suffix appended before extension
-fn save_luma_image_as(
-    img: &ImageBuffer<Luma<u8>, Vec<u8>>,
-    base_path: &std::path::PathBuf,
-    suffix: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let filename = format!("{}-{}.{}", base_path.display(), suffix, "png");
-    img.save(&filename)?;
-    println!("{filename}: saved in gray");
-    Ok(())
-}
-
-/// Save RGBA image to file with suffix appended before extension
-fn save_rgba_image_as(
-    img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
-    base_path: &std::path::PathBuf,
-    suffix: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let filename = format!("{}-{}.{}", base_path.display(), suffix, "png");
-    img.save(&filename)?;
-    println!("{filename}: saved in color");
-    Ok(())
 }
 
 /// Parse a string into a color, with format like this #RRGGBB
@@ -426,7 +403,7 @@ fn experiment_with_mask_image(
     index: u32,
 ) -> Result<f32, Box<dyn std::error::Error>> {
     let mut image = imageproc::edges::canny(&image, 1.0, 1.0);
-    save_luma_image_as(&image, base_path, &format!("{index}-canny")[..])?;
+    io::save_luma_image_as(&image, base_path, &format!("{index}-canny")[..])?;
 
     // imageproc::morphology::dilate_mut(&mut image, Norm::LInf, 5);
     // //let mut image = imageproc::filter::gaussian_blur_f32(&image, 3.0);
@@ -446,7 +423,7 @@ fn experiment_with_mask_image(
     }
     lines.truncate(4);
     imageproc::hough::draw_polar_lines_mut(&mut image, &lines[..], Luma([128u8]));
-    save_luma_image_as(&image, base_path, &format!("{index}-canny-lines")[..])?;
+    io::save_luma_image_as(&image, base_path, &format!("{index}-canny-lines")[..])?;
 
     let angles: Vec<i32> = lines
         .iter()
