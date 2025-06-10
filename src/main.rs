@@ -11,6 +11,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+mod alpha_channel;
+
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
@@ -66,7 +68,7 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
     save_rgba_image_as(&imgb, &base_path, "floodfilled")?;
 
     // Extract alpha channel from color image so we can clean it up
-    let mut img_alpha = extract_alpha_channel(&imgb);
+    let mut img_alpha = alpha_channel::extract(&imgb);
     save_luma_image_as(&img_alpha, &base_path, "alpha")?;
 
     // Remove specs and dust from alpha channel, trim outer edges slightly
@@ -75,7 +77,7 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
     save_luma_image_as(&img_alpha, &base_path, "alpha-eroded")?;
 
     // Replace alpha channel in the color image with the cleaned one
-    replace_alpha_channel(&mut imgb, &img_alpha);
+    alpha_channel::replace(&mut imgb, &img_alpha);
     save_rgba_image_as(&imgb, &base_path, "floodfilled-with-clean-alpha")?;
 
     // Extract individual blobs from the alpha channel
@@ -110,7 +112,7 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
             Interpolation::Bicubic,
             Rgba([0, 0, 0, 0]),
         );
-        replace_alpha_channel(&mut imgb_rotated, &img_mask_rotated_and_blurred);
+        alpha_channel::replace(&mut imgb_rotated, &img_mask_rotated_and_blurred);
         let bounding_box = compute_bounding_box(&img_mask_rotated_and_blurred);
         let imgb_cropped = crop_imm(
             &imgb_rotated,
@@ -269,39 +271,6 @@ fn flood_fill(
         for (dx, dy) in directions {
             stack.push((cx + dx, cy + dy));
         }
-    }
-}
-
-/// Extract the alpha channel of a color image into a grayscale image
-fn extract_alpha_channel(image: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> ImageBuffer<Luma<u8>, Vec<u8>> {
-    let width = image.width();
-    let height = image.height();
-
-    // Create a new buffer to store the alpha channel
-    let mut gray_image = ImageBuffer::new(width, height);
-
-    // Iterate over each pixel in the original image
-    for (x, y, pixel) in image.enumerate_pixels() {
-        // Extract the alpha value from the Rgba pixel
-        let alpha_value = pixel[3];
-        // Set the corresponding pixel in the gray image
-        *gray_image.get_pixel_mut(x, y) = Luma([alpha_value]);
-    }
-
-    gray_image
-}
-
-/// Replace the alpha channel of the specifid color image with the specified grayscale image
-fn replace_alpha_channel(
-    image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
-    gray_image: &ImageBuffer<Luma<u8>, Vec<u8>>,
-) {
-    // Iterate over each pixel in the original image
-    for (x, y, pixel) in image.enumerate_pixels_mut() {
-        // Get the pixel from the gray image
-        let gray_pixel = gray_image.get_pixel(x, y);
-        // Set the alpha value of the original image to the value of the gray pixel
-        *pixel = Rgba([pixel[0], pixel[1], pixel[2], gray_pixel[0]]);
     }
 }
 
