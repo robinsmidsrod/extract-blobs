@@ -1,15 +1,12 @@
+use std::path::{Path, PathBuf};
+
 use clap::Parser;
 use image::{ImageBuffer, Luma, Rgba, imageops::crop_imm};
 use imageproc::{
-    contours::Contour, distance_transform::Norm, drawing, geometric_transformations::Interpolation,
+    contours::Contour, distance_transform::Norm, geometric_transformations::Interpolation,
     hough::LineDetectionOptions, point::Point, rect::Rect, region_labelling::Connectivity,
 };
 use itertools::Itertools;
-use palette::{self, FromColor};
-use std::{
-    collections::HashSet,
-    path::{Path, PathBuf},
-};
 
 mod alpha_channel;
 mod color_ops;
