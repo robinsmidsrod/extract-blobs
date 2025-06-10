@@ -490,9 +490,8 @@ fn experiment_with_mask_image(
     // Find median angle
     let mid = angles.len() / 2;
     let angle: f32 = if angles.len() % 2 == 0 {
-        ( angles[mid - 1] as f32 + angles[mid] as f32) / 2.0
-    }
-    else {
+        (angles[mid - 1] as f32 + angles[mid] as f32) / 2.0
+    } else {
         angles[mid] as f32
     };
     let inverted_angle = angle * -1.0;
