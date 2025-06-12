@@ -4,13 +4,14 @@ use clap::Parser;
 use image::{ImageBuffer, Luma, Rgba, imageops::crop_imm};
 use imageproc::{
     contours::Contour, distance_transform::Norm, geometric_transformations::Interpolation,
-    hough::LineDetectionOptions, point::Point, rect::Rect, region_labelling::Connectivity,
+    hough::LineDetectionOptions, point::Point, rect::Rect,
 };
 use itertools::Itertools;
 
 mod alpha_channel;
 mod color_ops;
 mod drawing;
+mod extraction;
 mod io;
 
 #[derive(Parser, Debug)]
@@ -81,7 +82,7 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
     io::save_rgba_image_as(&imgb, &base_path, "floodfilled-with-clean-alpha")?;
 
     // Extract individual blobs from the alpha channel
-    let blobs = split_blobs(&img_alpha);
+    let blobs = extraction::extract_blobs(&img_alpha);
     let mut counter = 0u32;
     for blob in &blobs {
         let skew_angle = experiment_with_mask_image(&blob, &base_path, counter)?;
@@ -127,36 +128,6 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
     }
 
     Ok(())
-}
-
-/// Split gray image into a list of gray images, with each blob by itself
-fn split_blobs(
-    image: &ImageBuffer<Luma<u8>, Vec<u8>>,
-) -> Vec<ImageBuffer<image::Luma<u8>, Vec<u8>>> {
-    let (width, height) = image.dimensions();
-    let img_components =
-        imageproc::region_labelling::connected_components(image, Connectivity::Four, Luma([0u8]));
-
-    let mut blobs: Vec<ImageBuffer<Luma<u8>, Vec<u8>>> = Vec::new();
-
-    for (x, y, pixel) in img_components.enumerate_pixels() {
-        let index = pixel[0] as usize;
-        // Skip background color
-        if index == 0 {
-            continue;
-        }
-        let index = index - 1;
-        let img_opt = blobs.get_mut(index);
-        if let None = img_opt {
-            let image = ImageBuffer::new(width, height);
-            blobs.push(image);
-        };
-        let img_opt = blobs.get_mut(index);
-        if let Some(img) = img_opt {
-            img.put_pixel(x, y, Luma([255u8]));
-        };
-    }
-    blobs
 }
 
 /// Compute skew angle, bounding box and rotation center from luma image
