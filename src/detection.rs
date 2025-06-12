@@ -54,7 +54,7 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     index: u32,
 ) -> Result<f32, Box<dyn std::error::Error>> {
     let mut image = imageproc::edges::canny(&image, 1.0, 1.0);
-    crate::io::save_luma_image_as(&image, base_path, &format!("{index}-canny")[..])?;
+    crate::io::save_luma_image_as(&image, base_path, &format!("mask-{index}-canny")[..])?;
 
     let options = LineDetectionOptions {
         vote_threshold: 250, // understood as number of pixels that should be on the line
@@ -67,7 +67,7 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     }
     lines.truncate(4);
     imageproc::hough::draw_polar_lines_mut(&mut image, &lines[..], Luma([128u8]));
-    crate::io::save_luma_image_as(&image, base_path, &format!("{index}-canny-lines")[..])?;
+    crate::io::save_luma_image_as(&image, base_path, &format!("mask-{index}-canny-lines")[..])?;
 
     let angles: Vec<i32> = lines
         .iter()

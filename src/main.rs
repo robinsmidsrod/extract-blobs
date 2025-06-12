@@ -58,25 +58,25 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
         img.height(),
         1,
     );
-    io::save_rgba_image_as(&imgb, &base_path, "border")?;
+    io::save_rgba_image_as(&imgb, &base_path, "a-border")?;
 
     // Flood fill color image with chroma key color, making it transparent, with a fuzz factor
     let transparent = image::Rgba([0, 0, 0, 0]);
     drawing::flood_fill(&mut imgb, 0, 0, chroma_key_color, transparent, 25.0);
-    io::save_rgba_image_as(&imgb, &base_path, "floodfilled")?;
+    io::save_rgba_image_as(&imgb, &base_path, "b-floodfilled")?;
 
     // Extract alpha channel from color image so we can clean it up
     let mut img_alpha = alpha_channel::extract(&imgb);
-    io::save_luma_image_as(&img_alpha, &base_path, "alpha")?;
+    io::save_luma_image_as(&img_alpha, &base_path, "b-mask")?;
 
     // Remove specs and dust from alpha channel, trim outer edges slightly
     imageproc::morphology::erode_mut(&mut img_alpha, Norm::L1, 5);
     imageproc::morphology::dilate_mut(&mut img_alpha, Norm::L1, 3);
-    io::save_luma_image_as(&img_alpha, &base_path, "alpha-eroded")?;
+    io::save_luma_image_as(&img_alpha, &base_path, "b-mask-cleaned")?;
 
     // Replace alpha channel in the color image with the cleaned one
     alpha_channel::replace(&mut imgb, &img_alpha);
-    io::save_rgba_image_as(&imgb, &base_path, "floodfilled-with-clean-alpha")?;
+    io::save_rgba_image_as(&imgb, &base_path, "c-with-mask")?;
 
     // Extract individual blobs from the alpha channel
     let blobs = extraction::extract_blobs(&img_alpha);
@@ -84,7 +84,7 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
     for blob in &blobs {
         let deskew_angle =
             detection::compute_deskew_angle_for_rectangle(&blob, &base_path, counter)?;
-        io::save_luma_image_as(&blob, &base_path, &format!("blob-{counter}")[..])?;
+        io::save_luma_image_as(&blob, &base_path, &format!("mask-{counter}")[..])?;
         let (_skew_angle, center) = detection::compute_skew_angle_and_rotation_center(&blob);
         let deskew_theta = deskew_angle * std::f32::consts::PI / 180.0;
         println!("Computed deskew angle: {deskew_angle}");
@@ -101,7 +101,7 @@ fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn st
         io::save_luma_image_as(
             &img_mask_rotated_and_blurred,
             &base_path,
-            &format!("blob-{counter}-deskewed")[..],
+            &format!("mask-{counter}-deskewed")[..],
         )?;
 
         let mut imgb_rotated = imageproc::geometric_transformations::rotate(
