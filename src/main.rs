@@ -71,102 +71,140 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         for file_glob_result in glob::glob(file_pattern)? {
             let file_path = match file_glob_result {
                 Ok(f) => f,
-                Err(e) => panic!("Problem globbing the file: {e:?}"),
+                Err(e) => panic!("Problem globbing the file pattern {file_pattern}: {e:?}"),
             };
-            process_file(&file_path, &cli.chroma_key_color)?;
+            process_file(&file_path, &config)?;
+            println!("");
         }
     }
     Ok(())
 }
 
-fn process_file(file: &PathBuf, chroma_key_color: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     // Figure out path stuff
     let base_dir = Path::new(&file).parent().unwrap();
     let base_filename = Path::new(&file).file_stem().unwrap();
     let base_path = base_dir.join(base_filename);
-    // println!("{}: (stem)", base_path.display());
 
-    let img = image::open(&file)?;
-    println!("{}: {}x{}", file.display(), img.width(), img.height());
-    let mut imgb = img.to_rgba8();
+    // Open image a get pixel buffer
+    let image = image::open(&file)?;
+    let width = image.width();
+    let height = image.height();
+    println!("{}: processing...", file.display());
+    let mut image_rgba = image.to_rgba8();
 
     // Draw a thin border on color image with chroma key color
-    let chroma_key_color = color_ops::parse_color(&chroma_key_color)?;
     drawing::draw_border(
-        &mut imgb,
-        chroma_key_color,
+        &mut image_rgba,
+        config.chroma_key_color,
         0,
         0,
-        img.width(),
-        img.height(),
-        1,
+        width,
+        height,
+        config.border_thickness,
     );
-    io::save_rgba_image_as(&imgb, &base_path, "a-border")?;
+    if config.save_intermediary_images {
+        io::save_rgba_image_as(&image_rgba, &base_path, "a-border")?;
+    }
 
-    // Flood fill color image with chroma key color, making it transparent, with a fuzz factor
-    let transparent = image::Rgba([0, 0, 0, 0]);
-    drawing::flood_fill(&mut imgb, 0, 0, chroma_key_color, transparent, 25.0);
-    io::save_rgba_image_as(&imgb, &base_path, "b-floodfilled")?;
+    // Floodfill color image with chroma key color, making it transparent, with a fuzz factor
+    drawing::flood_fill(
+        &mut image_rgba,
+        0,
+        0,
+        config.chroma_key_color,
+        config.floodfill_color,
+        config.floodfill_tolerance,
+    );
+    if config.save_intermediary_images {
+        io::save_rgba_image_as(&image_rgba, &base_path, "b-floodfilled")?;
+    }
 
     // Extract alpha channel from color image so we can clean it up
-    let mut img_alpha = alpha_channel::extract(&imgb);
-    io::save_luma_image_as(&img_alpha, &base_path, "b-mask")?;
+    let mut image_mask = alpha_channel::extract(&image_rgba);
+    if config.save_intermediary_images {
+        io::save_luma_image_as(&image_mask, &base_path, "b-mask")?;
+    }
 
     // Remove specs and dust from alpha channel, trim outer edges slightly
-    imageproc::morphology::erode_mut(&mut img_alpha, Norm::L1, 5);
-    imageproc::morphology::dilate_mut(&mut img_alpha, Norm::L1, 3);
-    io::save_luma_image_as(&img_alpha, &base_path, "b-mask-cleaned")?;
+    imageproc::morphology::erode_mut(&mut image_mask, Norm::L1, 5);
+    imageproc::morphology::dilate_mut(&mut image_mask, Norm::L1, 3);
+    if config.save_intermediary_images {
+        io::save_luma_image_as(&image_mask, &base_path, "b-mask-cleaned")?;
+    }
 
     // Replace alpha channel in the color image with the cleaned one
-    alpha_channel::replace(&mut imgb, &img_alpha);
-    io::save_rgba_image_as(&imgb, &base_path, "c-with-mask")?;
+    alpha_channel::replace(&mut image_rgba, &image_mask);
+    if config.save_intermediary_images {
+        io::save_rgba_image_as(&image_rgba, &base_path, "c-with-mask")?;
+    }
 
     // Extract individual blobs from the alpha channel
-    let blobs = extraction::extract_blobs(&img_alpha);
-    let mut counter = 0u32;
+    let blobs = extraction::extract_blobs(&image_mask);
+    println!("{}: found {} blobs", file.display(), blobs.len());
+    let mut counter = 1u32;
     for blob in &blobs {
-        let deskew_angle =
-            detection::compute_deskew_angle_for_rectangle(&blob, &base_path, counter)?;
-        io::save_luma_image_as(&blob, &base_path, &format!("mask-{counter}")[..])?;
-        let (_skew_angle, center) = detection::compute_skew_angle_and_rotation_center(&blob);
-        let deskew_theta = deskew_angle * std::f32::consts::PI / 180.0;
-        println!("Computed deskew angle: {deskew_angle}");
-        println!("Rotation center: {center:?}");
-        let img_mask_rotated = imageproc::geometric_transformations::rotate(
-            &blob,
-            (center.x as f32, center.y as f32),
-            deskew_theta,
-            Interpolation::Bicubic,
-            Luma([0u8]),
-        );
-        let img_mask_rotated_and_blurred =
-            imageproc::filter::gaussian_blur_f32(&img_mask_rotated, 3.0);
-        io::save_luma_image_as(
-            &img_mask_rotated_and_blurred,
-            &base_path,
-            &format!("mask-{counter}-deskewed")[..],
-        )?;
+        if config.save_intermediary_images {
+            io::save_luma_image_as(&blob, &base_path, &format!("mask-{counter}")[..])?;
+        }
 
-        let mut imgb_rotated = imageproc::geometric_transformations::rotate(
-            &imgb,
-            (center.x as f32, center.y as f32),
-            deskew_theta,
+        // Compute values needed for image rotation
+        let bounding_box = detection::compute_bounding_box(&blob, config);
+        let center = detection::compute_center_from_rectangle(&bounding_box, config);
+        let deskew_angle =
+            detection::compute_deskew_angle_for_rectangle(&blob, &config, &base_path, counter)?;
+
+        // Rotate mask image
+        let black_luma = Luma([0u8]);
+        let blob = imageproc::geometric_transformations::rotate(
+            &blob,
+            point_to_tuple(center),
+            angle_to_radians(deskew_angle),
             Interpolation::Bicubic,
-            Rgba([0, 0, 0, 0]),
+            black_luma,
         );
-        alpha_channel::replace(&mut imgb_rotated, &img_mask_rotated_and_blurred);
-        let bounding_box = detection::compute_bounding_box(&img_mask_rotated_and_blurred);
-        let imgb_cropped = image::imageops::crop_imm(
-            &imgb_rotated,
+
+        // Blur mask image
+        let blob = imageproc::filter::gaussian_blur_f32(&blob, config.edge_blur);
+        if config.save_intermediary_images {
+            io::save_luma_image_as(&blob, &base_path, &format!("mask-{counter}-deskewed")[..])?;
+        }
+
+        // Rotate color image
+        let black_rgba = Rgba([0, 0, 0, 0]);
+        let mut blob_rgba = imageproc::geometric_transformations::rotate(
+            &image_rgba,
+            point_to_tuple(center),
+            angle_to_radians(deskew_angle),
+            Interpolation::Bicubic,
+            black_rgba,
+        );
+
+        // Crop color image with mask set as new alpha channel
+        alpha_channel::replace(&mut blob_rgba, &blob);
+        let bounding_box = detection::compute_bounding_box(&blob, config);
+        let blob_rgba = image::imageops::crop_imm(
+            &blob_rgba,
             bounding_box.left() as u32,
             bounding_box.top() as u32,
             bounding_box.width(),
             bounding_box.height(),
         )
         .to_image();
-        io::save_rgba_image_as(&imgb_cropped, &base_path, &format!("{counter}")[..])?;
+
+        // Save final blob color image
+        io::save_rgba_image_as(&blob_rgba, &base_path, &format!("{counter}")[..])?;
+
         counter += 1;
     }
 
     Ok(())
+}
+
+fn point_to_tuple(center: imageproc::point::Point<u32>) -> (f32, f32) {
+    (center.x as f32, center.y as f32)
+}
+
+fn angle_to_radians(angle: f32) -> f32 {
+    angle * std::f32::consts::PI / 180.0
 }
