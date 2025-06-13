@@ -20,10 +20,53 @@ struct Cli {
     /// Chroma key color
     #[arg(short, long, default_value = "#72B34B")]
     chroma_key_color: String,
+    /// Floodfill tolerance
+    #[arg(short('t'), long, default_value_t = 25.0)]
+    floodfill_tolerance: f32,
+    /// Minimum pixels touching detected line
+    #[arg(short('p'), long, default_value_t = 225)]
+    min_pixels_touching_line: u32,
+    /// Maximum detected lines
+    #[arg(short('l'), long, default_value_t = 4)]
+    max_lines: usize,
+    /// Maximum blob rotation
+    #[arg(short('r'), long, default_value_t = 10.0)]
+    max_blob_rotation: f32,
+    /// Save intermediary images
+    #[arg(short('i'), long, default_value_t = false)]
+    save_intermediary_images: bool,
+    /// Verbose messages
+    #[arg(short('v'), long, default_value_t = false)]
+    verbose: bool,
+}
+
+struct Config {
+    chroma_key_color: Rgba<u8>,
+    floodfill_tolerance: f32,
+    floodfill_color: Rgba<u8>,
+    border_thickness: u32,
+    edge_blur: f32,
+    min_pixels_touching_line: u32,
+    max_lines: usize,
+    max_blob_rotation: f32,
+    save_intermediary_images: bool,
+    verbose: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
+    let config = Config {
+        chroma_key_color: color_ops::parse_color(&cli.chroma_key_color)?,
+        floodfill_tolerance: cli.floodfill_tolerance,
+        floodfill_color: Rgba([0, 0, 0, 0]), // transparent
+        border_thickness: 1,
+        edge_blur: 3.0,
+        min_pixels_touching_line: cli.min_pixels_touching_line,
+        max_lines: cli.max_lines,
+        max_blob_rotation: cli.max_blob_rotation,
+        save_intermediary_images: cli.save_intermediary_images,
+        verbose: cli.verbose,
+    };
     for file_pattern in &cli.files {
         for file_glob_result in glob::glob(file_pattern)? {
             let file_path = match file_glob_result {
