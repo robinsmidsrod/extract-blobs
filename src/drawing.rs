@@ -7,6 +7,7 @@ use imageproc::rect::Rect;
 use crate::color_ops;
 
 /// Draws a border into the specified image buffer with the specified color and thickness
+/// NB: The image canvas is not made bigger
 pub(crate) fn draw_border(
     image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
     color: Rgba<u8>,
