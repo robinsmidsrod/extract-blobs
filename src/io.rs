@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use image::ImageBuffer;
-use image::Rgba;
 use image::Luma;
+use image::Rgba;
 
 /// Save grayscale image to file with suffix appended before extension
 pub(crate) fn save_luma_image_as(
@@ -12,7 +12,7 @@ pub(crate) fn save_luma_image_as(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let filename = format!("{}-{}.{}", base_path.display(), suffix, "png");
     img.save(&filename)?;
-    println!("{filename}: saved in gray");
+    println!("{filename}: saved");
     Ok(())
 }
 
@@ -24,6 +24,6 @@ pub(crate) fn save_rgba_image_as(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let filename = format!("{}-{}.{}", base_path.display(), suffix, "png");
     img.save(&filename)?;
-    println!("{filename}: saved in color");
+    println!("{filename}: saved");
     Ok(())
 }
