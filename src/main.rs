@@ -88,6 +88,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+    println!("{}: processing...", file.display());
+
     // Figure out path stuff
     let base_dir = Path::new(&file).parent().unwrap();
     let base_filename = Path::new(&file).file_stem().unwrap();
@@ -101,9 +103,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
     let width = image.width();
     let height = image.height();
 
-    println!("{}: processing...", file.display());
     let mut image_rgba = image.to_rgba8();
-
     let dominant_color_hex = find_dominant_color_hex(&image_rgba);
     println!(
         "{}: dominant color is #{}",
