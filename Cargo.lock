@@ -1201,6 +1201,7 @@ dependencies = [
  "imageproc",
  "itertools 0.14.0",
  "palette",
+ "png",
 ]
 
 [[package]]

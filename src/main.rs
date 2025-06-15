@@ -32,6 +32,9 @@ struct Cli {
     /// Maximum blob rotation
     #[arg(short('r'), long, default_value_t = 10.0)]
     max_blob_rotation: f32,
+    /// Output image pixel density in inches
+    #[arg(short('d'), long, default_value_t = 150)]
+    dpi: u32,
     /// Save intermediary images
     #[arg(short('i'), long, default_value_t = false)]
     save_intermediary_images: bool,
@@ -51,6 +54,7 @@ struct Config {
     max_blob_rotation: f32,
     save_intermediary_images: bool,
     verbose: bool,
+    dpi: u32,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -64,6 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         min_pixels_touching_line: cli.min_pixels_touching_line,
         max_lines: cli.max_lines,
         max_blob_rotation: cli.max_blob_rotation,
+        dpi: cli.dpi,
         save_intermediary_images: cli.save_intermediary_images,
         verbose: cli.verbose,
     };
@@ -111,7 +116,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         config.border_thickness,
     );
     if config.save_intermediary_images {
-        io::save_rgba_image_as(&image_rgba, &base_path, "a-border")?;
+        io::save_rgba_image_as(&image_rgba, &base_path, "a-border", config.dpi)?;
     }
 
     // Floodfill color image with chroma key color, making it transparent, with a fuzz factor
@@ -124,7 +129,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         config.floodfill_tolerance,
     );
     if config.save_intermediary_images {
-        io::save_rgba_image_as(&image_rgba, &base_path, "b-floodfilled")?;
+        io::save_rgba_image_as(&image_rgba, &base_path, "b-floodfilled", config.dpi)?;
     }
 
     // Extract alpha channel from color image so we can clean it up
@@ -143,7 +148,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
     // Replace alpha channel in the color image with the cleaned one
     alpha_channel::replace(&mut image_rgba, &image_mask);
     if config.save_intermediary_images {
-        io::save_rgba_image_as(&image_rgba, &base_path, "c-with-mask")?;
+        io::save_rgba_image_as(&image_rgba, &base_path, "c-with-mask", config.dpi)?;
     }
 
     // Extract individual blobs from the alpha channel
@@ -200,7 +205,12 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         .to_image();
 
         // Save final blob color image
-        io::save_rgba_image_as(&blob_rgba, &base_path, &format!("{counter}")[..])?;
+        io::save_rgba_image_as(
+            &blob_rgba,
+            &base_path,
+            &format!("{counter}")[..],
+            config.dpi,
+        )?;
 
         counter += 1;
     }
