@@ -4,6 +4,8 @@ use clap::Parser;
 use image::{DynamicImage, ImageDecoder, ImageFormat, Luma, Pixel, Rgba};
 use imageproc::{distance_transform::Norm, geometric_transformations::Interpolation};
 
+use itertools::Itertools; // for join() iterator method
+
 mod alpha_channel;
 mod color_ops;
 mod detection;
