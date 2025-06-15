@@ -18,7 +18,7 @@ struct Cli {
     #[arg()]
     files: Vec<String>,
     /// Chroma key color
-    #[arg(short, long, default_value = "#72B34B")]
+    #[arg(short, long, default_value = "#71AA5D")]
     chroma_key_color: String,
     /// Floodfill fuzz (euclidean distance)
     #[arg(short('f'), long, default_value_t = 20.0)]
