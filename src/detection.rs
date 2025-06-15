@@ -1,7 +1,9 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use image::ImageBuffer;
 use image::Luma;
+use image::Rgba;
 use imageproc::hough::LineDetectionOptions;
 use imageproc::point::Point;
 use imageproc::rect::Rect;
@@ -124,4 +126,21 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     }
 
     Ok(inverted_angle)
+}
+
+// Find the color that occurs the most in the specified image
+pub(crate) fn find_dominant_color(image: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> Rgba<u8> {
+    let mut color_map: HashMap<Rgba<u8>, u32> = HashMap::new();
+    for (_x, _y, pixel) in image.enumerate_pixels() {
+        let counter = color_map.entry(*pixel).or_insert(0);
+        *counter += 1;
+    }
+    // Sort items in the hash by value reverse
+    let sorted_colors: Vec<_> = color_map
+        .iter()
+        .sorted_by(|a, b| a.1.cmp(b.1).reverse())
+        .collect();
+    let dominant_color_tuple = sorted_colors[0];
+    let dominant_color = *dominant_color_tuple.0;
+    dominant_color
 }

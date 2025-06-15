@@ -93,6 +93,13 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
     println!("{}: processing...", file.display());
     let mut image_rgba = image.to_rgba8();
 
+    let dominant_color_hex = find_dominant_color_hex(&image_rgba);
+    println!(
+        "{}: dominant color is #{}",
+        file.display(),
+        dominant_color_hex
+    );
+
     // Draw a thin border on color image with chroma key color
     drawing::draw_border(
         &mut image_rgba,
@@ -199,6 +206,15 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
     }
 
     Ok(())
+}
+
+fn find_dominant_color_hex(image_rgba: &image::ImageBuffer<Rgba<u8>, Vec<u8>>) -> String {
+    detection::find_dominant_color(image_rgba)
+        .to_rgb()
+        .channels()
+        .iter()
+        .map(|f| format!("{:X}", f))
+        .join("")
 }
 
 fn point_to_tuple(center: imageproc::point::Point<u32>) -> (f32, f32) {
