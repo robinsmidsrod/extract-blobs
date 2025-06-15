@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use clap::Parser;
-use image::{DynamicImage, ImageDecoder, ImageFormat, Luma, Pixel, Rgba};
+use image::{Luma, Pixel, Rgba};
 use imageproc::{distance_transform::Norm, geometric_transformations::Interpolation};
 
 use itertools::Itertools; // for join() iterator method
@@ -95,11 +95,9 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
     let base_filename = Path::new(&file).file_stem().unwrap();
     let base_path = base_dir.join(base_filename);
 
-    // Open image and get EXIF metadata
-    let (image, _exif, _dpi_x, _dpi_y) = open_image(file)?;
-    // let image = image::open(&file)?;
-    //println!("EXIF: {:?}", exif);
-
+    // Open image and maybe get pixel density in dots per inch
+    let (image, maybe_dpi) = io::open_image(&file)?;
+    println!("{}: detected DPI is {:?}", file.display(), maybe_dpi);
     let width = image.width();
     let height = image.height();
 
@@ -222,29 +220,6 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
     }
 
     Ok(())
-}
-
-fn open_image(
-    file: &PathBuf,
-) -> Result<(DynamicImage, Vec<u8>, u32, u32), Box<dyn std::error::Error>> {
-    let image_reader = image::ImageReader::open(&file)?.with_guessed_format()?;
-    let format = image_reader.format().unwrap();
-    let mut decoder = image_reader.into_decoder()?;
-    let exif = decoder.exif_metadata()?.unwrap_or_default();
-    let image = DynamicImage::from_decoder(decoder)?;
-    let dpi_x = 96;
-    let dpi_y = 96;
-    if format == ImageFormat::Jpeg {
-        let file_contents = std::fs::read(&file)?;
-        let mut jpeg_decoder = zune_jpeg::JpegDecoder::new(&file_contents);
-        jpeg_decoder.decode_headers()?;
-        let image_info = jpeg_decoder.info().unwrap();
-        println!(
-            "JPEG image info: pixel_density={}, x_density={}, y_density={}",
-            image_info.pixel_density, image_info.x_density, image_info.y_density
-        );
-    }
-    Ok((image, exif, dpi_x, dpi_y))
 }
 
 fn find_dominant_color_hex(image_rgba: &image::ImageBuffer<Rgba<u8>, Vec<u8>>) -> String {
