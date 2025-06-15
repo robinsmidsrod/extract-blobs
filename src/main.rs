@@ -20,9 +20,9 @@ struct Cli {
     /// Chroma key color
     #[arg(short, long, default_value = "#72B34B")]
     chroma_key_color: String,
-    /// Floodfill tolerance
-    #[arg(short('t'), long, default_value_t = 25.0)]
-    floodfill_tolerance: f32,
+    /// Floodfill fuzz (euclidean distance)
+    #[arg(short('f'), long, default_value_t = 20.0)]
+    floodfill_fuzz: f32,
     /// Minimum pixels touching detected line
     #[arg(short('p'), long, default_value_t = 225)]
     min_pixels_touching_line: u32,
@@ -45,7 +45,7 @@ struct Cli {
 
 struct Config {
     chroma_key_color: Rgba<u8>,
-    floodfill_tolerance: f32,
+    floodfill_fuzz: f32,
     floodfill_color: Rgba<u8>,
     border_thickness: u32,
     edge_blur: f32,
@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     let config = Config {
         chroma_key_color: color_ops::parse_color(&cli.chroma_key_color)?,
-        floodfill_tolerance: cli.floodfill_tolerance,
+        floodfill_fuzz: cli.floodfill_fuzz,
         floodfill_color: Rgba([0, 0, 0, 0]), // transparent
         border_thickness: 1,
         edge_blur: 3.0,
@@ -126,7 +126,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         0,
         config.chroma_key_color,
         config.floodfill_color,
-        config.floodfill_tolerance,
+        config.floodfill_fuzz,
     );
     if config.save_intermediary_images {
         io::save_rgba_image_as(&image_rgba, &base_path, "b-floodfilled", config.dpi)?;

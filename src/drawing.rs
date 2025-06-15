@@ -31,7 +31,7 @@ pub(crate) fn flood_fill(
     y: i32,
     target_color: Rgba<u8>,
     replacement_color: Rgba<u8>,
-    tolerance: f32,
+    fuzz: f32,
 ) {
     let (width, height) = image.dimensions();
     let target_color = color_ops::image_rgba_to_palette_srgb(&target_color);
@@ -51,7 +51,7 @@ pub(crate) fn flood_fill(
         let pixel = image.get_pixel(cx as u32, cy as u32);
         let current_color = color_ops::image_rgba_to_palette_srgb(pixel);
 
-        if color_ops::color_similarity(&current_color, &target_color) > tolerance {
+        if color_ops::color_similarity(&current_color, &target_color) > fuzz {
             continue;
         }
 
