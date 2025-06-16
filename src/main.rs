@@ -116,7 +116,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::error::Error>> {
-    println!("{}: processing...", file.display());
 
     // Figure out path stuff
     let base_dir = Path::new(&file).parent().unwrap();
@@ -129,29 +128,39 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
     // Decide which DPI to use for output images
     let dpi = match maybe_dpi {
         Some(dpi) => {
-            println!("{}: detected DPI is {:?}", file.display(), dpi);
+            if config.verbose {
+                println!("{}: detected DPI is {:?}", file.display(), dpi);
+            }
             match config.ignore_detected_dpi {
                 true => (config.dpi, config.dpi),
                 false => dpi,
             }
         }
         None => {
-            println!("{}: unable to detect DPI", file.display());
+            if config.verbose {
+                println!("{}: unable to detect DPI", file.display());
+            }
             (config.dpi, config.dpi)
         }
     };
-    println!("{}: using DPI {:?}", file.display(), dpi);
+    if config.verbose {
+        println!("{}: using DPI {:?}", file.display(), dpi);
+    }
 
     let width = image.width();
     let height = image.height();
 
     let mut image_rgba = image.to_rgba8();
-    let dominant_color_hex = find_dominant_color_hex(&image_rgba);
-    println!(
-        "{}: dominant color is #{}",
-        file.display(),
-        dominant_color_hex
-    );
+
+    // Detect dominant color in image
+    if config.verbose {
+        let dominant_color_hex = find_dominant_color_hex(&image_rgba);
+        println!(
+            "{}: dominant color is #{}",
+            file.display(),
+            dominant_color_hex
+        );
+    }
 
     // Draw a thin border on color image with chroma key color
     drawing::draw_border(
