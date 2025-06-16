@@ -102,14 +102,22 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
 
     // Open image and maybe get pixel density in dots per inch
     let (image, maybe_dpi) = io::open_image(&file)?;
-    match maybe_dpi {
+
+    // Decide which DPI to use for output images
+    let dpi = match maybe_dpi {
         Some(dpi) => {
             println!("{}: detected DPI is {:?}", file.display(), dpi);
+            match config.ignore_detected_dpi {
+                true => (config.dpi, config.dpi),
+                false => dpi,
+            }
         }
         None => {
             println!("{}: unable to detect DPI", file.display());
+            (config.dpi, config.dpi)
         }
-    }
+    };
+    println!("{}: using DPI {:?}", file.display(), dpi);
 
     let width = image.width();
     let height = image.height();
@@ -133,7 +141,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         config.border_thickness,
     );
     if config.save_intermediary_images {
-        io::save_rgba_image_as(&image_rgba, &base_path, "a-border", config.dpi)?;
+        io::save_rgba_image_as(&image_rgba, &base_path, "a-border", dpi)?;
     }
 
     // Floodfill color image with chroma key color, making it transparent, with a fuzz factor
@@ -146,7 +154,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         config.floodfill_fuzz,
     );
     if config.save_intermediary_images {
-        io::save_rgba_image_as(&image_rgba, &base_path, "b-floodfilled", config.dpi)?;
+        io::save_rgba_image_as(&image_rgba, &base_path, "b-floodfilled", dpi)?;
     }
 
     // Extract alpha channel from color image so we can clean it up
@@ -165,7 +173,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
     // Replace alpha channel in the color image with the cleaned one
     alpha_channel::replace(&mut image_rgba, &image_mask);
     if config.save_intermediary_images {
-        io::save_rgba_image_as(&image_rgba, &base_path, "c-with-mask", config.dpi)?;
+        io::save_rgba_image_as(&image_rgba, &base_path, "c-with-mask", dpi)?;
     }
 
     // Extract individual blobs from the alpha channel
@@ -226,7 +234,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
             &blob_rgba,
             &base_path,
             &format!("{counter}")[..],
-            config.dpi,
+            dpi,
         )?;
 
         counter += 1;

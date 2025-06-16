@@ -137,7 +137,7 @@ pub(crate) fn save_rgba_image_as(
     img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
     base_path: &PathBuf,
     suffix: &str,
-    dpi: u32,
+    dpi: (u32, u32),
 ) -> Result<(), Box<dyn std::error::Error>> {
     let filename = format!("{}-{}.{}", base_path.display(), suffix, "png");
 
@@ -153,8 +153,8 @@ pub(crate) fn save_rgba_image_as(
     encoder.set_depth(png::BitDepth::Eight);
     // https://www.w3.org/TR/2003/REC-PNG-20031110/#11pHYs
     encoder.set_pixel_dims(Some(png::PixelDimensions {
-        xppu: (dpi as f32 * 39.37) as u32, // 1 inch = 39.37 cm
-        yppu: (dpi as f32 * 39.37) as u32,
+        xppu: (dpi.0 as f32 * 39.37) as u32, // 1 inch = 39.37 cm
+        yppu: (dpi.1 as f32 * 39.37) as u32,
         unit: png::Unit::Meter,
     }));
     encoder.write_header()?.write_image_data(&buffer)?;
