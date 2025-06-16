@@ -25,6 +25,9 @@ struct Cli {
     /// Floodfill fuzz (euclidean distance)
     #[arg(short('f'), long, default_value_t = 20.0)]
     floodfill_fuzz: f32,
+    /// Blur edge factor
+    #[arg(short('b'), long, default_value_t = 2.0, value_parser = validate_blur_edge_factor)]
+    blur_edge_factor: f32,
     /// Minimum pixels touching detected line
     #[arg(short('p'), long, default_value_t = 225)]
     min_pixels_touching_line: u32,
@@ -48,12 +51,21 @@ struct Cli {
     verbose: bool,
 }
 
+fn validate_blur_edge_factor(value: &str) -> Result<f32, String> {
+    let num = value.parse::<f32>()
+        .map_err(|_| format!("Not a valid floating point number"))?;
+    if num <= 0.0 {
+        return Err(format!("Number must be greater than 0"));
+    }
+    Ok(num)
+}
+
 struct Config {
     chroma_key_color: Rgba<u8>,
     floodfill_fuzz: f32,
     floodfill_color: Rgba<u8>,
     border_thickness: u32,
-    edge_blur: f32,
+    blur_edge_factor: f32,
     min_pixels_touching_line: u32,
     max_lines: usize,
     max_blob_rotation: f32,
@@ -70,7 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         floodfill_fuzz: cli.floodfill_fuzz,
         floodfill_color: Rgba([0, 0, 0, 0]), // transparent
         border_thickness: 1,
-        edge_blur: 3.0,
+        blur_edge_factor: cli.blur_edge_factor,
         min_pixels_touching_line: cli.min_pixels_touching_line,
         max_lines: cli.max_lines,
         max_blob_rotation: cli.max_blob_rotation,
@@ -202,7 +214,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         );
 
         // Blur mask image
-        let blob = imageproc::filter::gaussian_blur_f32(&blob, config.edge_blur);
+        let blob = imageproc::filter::gaussian_blur_f32(&blob, config.blur_edge_factor);
         if config.save_intermediary_images {
             io::save_luma_image_as(&blob, &base_path, &format!("mask-{counter}-d-deskewed")[..])?;
         }
