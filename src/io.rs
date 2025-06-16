@@ -92,9 +92,16 @@ fn read_dpi_from_jfif(
 ) -> Result<Option<(u32, u32)>, Box<dyn std::error::Error>> {
     let c = Cursor::new(file_contents);
     let r = BufReader::new(c);
-    let mut reader = jfifdump::Reader::new(r)?;
+    let reader = jfifdump::Reader::new(r);
+    let Ok(mut reader) = reader else {
+        return Ok(None);
+    };
     loop {
-        match reader.next_segment()?.kind {
+        let next_segment = reader.next_segment();
+        let Ok(next_segment) = next_segment else {
+            return Ok(None);
+        };
+        match next_segment.kind {
             SegmentKind::Eoi => break,
             SegmentKind::App0Jfif(jfif) => {
                 // https://en.wikipedia.org/wiki/JPEG_File_Interchange_Format#JFIF_APP0_marker_segment
