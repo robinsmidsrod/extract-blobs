@@ -37,6 +37,7 @@ fn read_dpi_from_metadata(
         Some(exif) => read_dpi_from_exif(&exif)?,
         None => read_dpi_from_jfif(file_contents)?,
     };
+    // TODO: Support reading PNG pixel density
     Ok(dpi)
 }
 
