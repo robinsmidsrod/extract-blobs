@@ -25,6 +25,12 @@ struct Cli {
     /// Floodfill fuzz (euclidean distance)
     #[arg(short('f'), long, default_value_t = 20.0)]
     floodfill_fuzz: f32,
+    /// Trim edges (pixels)
+    #[arg(short('t'), long, default_value_t = 10)]
+    trim_edges: u8,
+    /// Grow edges (pixels)
+    #[arg(short('g'), long, default_value_t = 6)]
+    grow_edges: u8,
     /// Blur edge factor
     #[arg(short('b'), long, default_value_t = 2.0, value_parser = validate_blur_edge_factor)]
     blur_edge_factor: f32,
@@ -63,6 +69,8 @@ fn validate_blur_edge_factor(value: &str) -> Result<f32, String> {
 struct Config {
     chroma_key_color: Rgba<u8>,
     floodfill_fuzz: f32,
+    trim_edges: u8,
+    grow_edges: u8,
     floodfill_color: Rgba<u8>,
     border_thickness: u32,
     blur_edge_factor: f32,
@@ -80,6 +88,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Config {
         chroma_key_color: color_ops::parse_color(&cli.chroma_key_color)?,
         floodfill_fuzz: cli.floodfill_fuzz,
+        trim_edges: cli.trim_edges,
+        grow_edges: cli.grow_edges,
         floodfill_color: Rgba([0, 0, 0, 0]), // transparent
         border_thickness: 1,
         blur_edge_factor: cli.blur_edge_factor,
@@ -175,9 +185,9 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         io::save_luma_image_as(&image_mask, &base_path, "c-mask")?;
     }
 
-    // Remove specs and dust from alpha channel, trim outer edges slightly
-    imageproc::morphology::erode_mut(&mut image_mask, Norm::L1, 5);
-    imageproc::morphology::dilate_mut(&mut image_mask, Norm::L1, 3);
+    // Remove specs and dust from alpha channel, trim/grow outer edges slightly
+    imageproc::morphology::erode_mut(&mut image_mask, Norm::L1, config.trim_edges);
+    imageproc::morphology::dilate_mut(&mut image_mask, Norm::L1, config.grow_edges);
     if config.save_intermediary_images {
         io::save_luma_image_as(&image_mask, &base_path, "d-mask-cleaned")?;
     }
