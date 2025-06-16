@@ -97,7 +97,15 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
 
     // Open image and maybe get pixel density in dots per inch
     let (image, maybe_dpi) = io::open_image(&file)?;
-    println!("{}: detected DPI is {:?}", file.display(), maybe_dpi);
+    match maybe_dpi {
+        Some(dpi) => {
+            println!("{}: detected DPI is {:?}", file.display(), dpi);
+        }
+        None => {
+            println!("{}: unable to detect DPI", file.display());
+        }
+    }
+
     let width = image.width();
     let height = image.height();
 
