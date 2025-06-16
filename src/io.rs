@@ -48,10 +48,7 @@ fn read_dpi_from_exif(
     let maybe_exif = reader.read_raw(exif_raw.to_vec());
     let exif = match maybe_exif {
         Ok(d) => d,
-        Err(e) => {
-            eprintln!("Error parsing EXIF: {e}");
-            return Ok(None);
-        }
+        Err(_) => return Ok(None),
     };
     let unit = exif.get_field(Tag::ResolutionUnit, In::PRIMARY);
     let x_res = exif.get_field(Tag::XResolution, In::PRIMARY);
@@ -70,7 +67,7 @@ fn read_dpi_from_exif(
         exif::Value::Rational(ref vec) if !vec.is_empty() => vec[0].to_f32() as u32,
         _ => return Ok(None),
     };
-    println!("EXIF: unit={:?}, xres={:?}, yres={:?}", unit, x_res, y_res);
+    // println!("EXIF: unit={:?}, xres={:?}, yres={:?}", unit, x_res, y_res);
     // https://www.media.mit.edu/pia/Research/deepview/exif.html#ExifTags
     // 1 means no-unit
     // 2 means inch
@@ -105,10 +102,10 @@ fn read_dpi_from_jfif(
             SegmentKind::Eoi => break,
             SegmentKind::App0Jfif(jfif) => {
                 // https://en.wikipedia.org/wiki/JPEG_File_Interchange_Format#JFIF_APP0_marker_segment
-                println!(
-                    "JFIF: unit={},x_density={},y_density={}",
-                    jfif.unit, jfif.x_density, jfif.y_density
-                );
+                // println!(
+                //     "JFIF: unit={},x_density={},y_density={}",
+                //     jfif.unit, jfif.x_density, jfif.y_density
+                // );
                 // unit=0 means pixel aspect ratio (y:x)
                 // unit=1 means pixels per inch (2.54cm)
                 // unit=2 means pixels per centimeter
