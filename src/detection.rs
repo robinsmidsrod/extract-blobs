@@ -69,7 +69,7 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     // NB: I have no idea how low/high thresholds work, but a value of 1.0 for both seems to do the trick
     let mut image = imageproc::edges::canny(&image, 1.0, 1.0);
     if config.save_intermediary_images {
-        crate::io::save_luma_image_as(&image, base_path, &format!("mask-{index}-edges")[..])?;
+        crate::io::save_luma_image_as(&image, base_path, &format!("mask-{index}-b-edges")[..])?;
     }
 
     // Find lines matching edges
@@ -85,7 +85,7 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     let grey_luma = Luma([128u8]);
     imageproc::hough::draw_polar_lines_mut(&mut image, &lines[..], grey_luma);
     if config.save_intermediary_images {
-        crate::io::save_luma_image_as(&image, base_path, &format!("mask-{index}-lines")[..])?;
+        crate::io::save_luma_image_as(&image, base_path, &format!("mask-{index}-c-lines")[..])?;
     }
 
     // Rotate lines so that they all point in the same direction

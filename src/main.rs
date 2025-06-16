@@ -160,20 +160,20 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
     // Extract alpha channel from color image so we can clean it up
     let mut image_mask = alpha_channel::extract(&image_rgba);
     if config.save_intermediary_images {
-        io::save_luma_image_as(&image_mask, &base_path, "b-mask")?;
+        io::save_luma_image_as(&image_mask, &base_path, "c-mask")?;
     }
 
     // Remove specs and dust from alpha channel, trim outer edges slightly
     imageproc::morphology::erode_mut(&mut image_mask, Norm::L1, 5);
     imageproc::morphology::dilate_mut(&mut image_mask, Norm::L1, 3);
     if config.save_intermediary_images {
-        io::save_luma_image_as(&image_mask, &base_path, "b-mask-cleaned")?;
+        io::save_luma_image_as(&image_mask, &base_path, "d-mask-cleaned")?;
     }
 
     // Replace alpha channel in the color image with the cleaned one
     alpha_channel::replace(&mut image_rgba, &image_mask);
     if config.save_intermediary_images {
-        io::save_rgba_image_as(&image_rgba, &base_path, "c-with-mask", dpi)?;
+        io::save_rgba_image_as(&image_rgba, &base_path, "e-with-mask", dpi)?;
     }
 
     // Extract individual blobs from the alpha channel
@@ -182,7 +182,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
     let mut counter = 1u32;
     for blob in &blobs {
         if config.save_intermediary_images {
-            io::save_luma_image_as(&blob, &base_path, &format!("mask-{counter}")[..])?;
+            io::save_luma_image_as(&blob, &base_path, &format!("mask-{counter}-a")[..])?;
         }
 
         // Compute values needed for image rotation
@@ -204,7 +204,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         // Blur mask image
         let blob = imageproc::filter::gaussian_blur_f32(&blob, config.edge_blur);
         if config.save_intermediary_images {
-            io::save_luma_image_as(&blob, &base_path, &format!("mask-{counter}-deskewed")[..])?;
+            io::save_luma_image_as(&blob, &base_path, &format!("mask-{counter}-d-deskewed")[..])?;
         }
 
         // Rotate color image
