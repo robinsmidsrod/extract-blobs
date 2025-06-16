@@ -37,8 +37,11 @@ struct Cli {
     /// Output image pixel density in inches
     #[arg(short('d'), long, default_value_t = 150)]
     dpi: u32,
-    /// Save intermediary images
+    /// Ignore detected DPI in input images
     #[arg(short('i'), long, default_value_t = false)]
+    ignore_detected_dpi: bool,
+    /// Save intermediary images
+    #[arg(short('s'), long, default_value_t = false)]
     save_intermediary_images: bool,
     /// Verbose messages
     #[arg(short('v'), long, default_value_t = false)]
@@ -57,6 +60,7 @@ struct Config {
     save_intermediary_images: bool,
     verbose: bool,
     dpi: u32,
+    ignore_detected_dpi: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -73,6 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         dpi: cli.dpi,
         save_intermediary_images: cli.save_intermediary_images,
         verbose: cli.verbose,
+        ignore_detected_dpi: cli.ignore_detected_dpi,
     };
     for file_pattern in &cli.files {
         for file_glob_result in glob::glob(file_pattern)? {
