@@ -23,7 +23,7 @@ struct Cli {
     #[arg(short, long, default_value = "#71AA5D")]
     chroma_key_color: String,
     /// Floodfill fuzz (euclidean distance)
-    #[arg(short('f'), long, default_value_t = 20.0)]
+    #[arg(short('f'), long, default_value_t = 17.0)]
     floodfill_fuzz: f32,
     /// Trim edges (pixels)
     #[arg(short('t'), long, default_value_t = 10)]
