@@ -1,9 +1,9 @@
 [package]
-name = "split-img"
+name = "extract-blobs"
 version = "0.1.0"
 edition = "2024"
 authors = ["Robin Smidsrød"]
-description = "Split a green-screen scanned image into multiple images"
+description = "Extract blobs from a green-screen scanned images and store into multiple images"
 keywords = ["graphics", "scanner", "image-manipulation", "image-processing"]
 
 [dependencies]
