@@ -76,8 +76,8 @@ fn read_dpi_from_exif(
         return Ok(Some((x_res, y_res)));
     }
     if unit == 3 {
-        let x_res = (x_res as f32 * 2.54 ) as u32;
-        let y_res = ( y_res as f32 * 2.54 ) as u32;
+        let x_res = (x_res as f32 * 2.54) as u32;
+        let y_res = (y_res as f32 * 2.54) as u32;
         return Ok(Some((x_res, y_res)));
     }
     Ok(None)
