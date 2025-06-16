@@ -2,9 +2,11 @@
 name = "extract-blobs"
 version = "0.1.0"
 edition = "2024"
+license = "MIT OR Apache-2.0"
 authors = ["Robin Smidsrød"]
 description = "Extract blobs from a green-screen scanned images and store into multiple images"
 keywords = ["graphics", "scanner", "image-manipulation", "image-processing"]
+categories = ["command-line-utilities", "multimedia::images"]
 
 [dependencies]
 clap = { version = "4.5.39", features = ["derive"] }
