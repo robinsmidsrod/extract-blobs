@@ -71,7 +71,16 @@ fn read_dpi_from_exif(
         _ => return Ok(None),
     };
     println!("EXIF: unit={:?}, xres={:?}, yres={:?}", unit, x_res, y_res);
+    // https://www.media.mit.edu/pia/Research/deepview/exif.html#ExifTags
+    // 1 means no-unit
+    // 2 means inch
+    // 3 means centimeter
     if unit == 2 {
+        return Ok(Some((x_res, y_res)));
+    }
+    if unit == 3 {
+        let x_res = (x_res as f32 * 2.54 ) as u32;
+        let y_res = ( y_res as f32 * 2.54 ) as u32;
         return Ok(Some((x_res, y_res)));
     }
     Ok(None)
