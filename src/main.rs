@@ -58,7 +58,8 @@ struct Cli {
 }
 
 fn validate_blur_edge_factor(value: &str) -> Result<f32, String> {
-    let num = value.parse::<f32>()
+    let num = value
+        .parse::<f32>()
         .map_err(|_| format!("Not a valid floating point number"))?;
     if num <= 0.0 {
         return Err(format!("Number must be greater than 0"));
@@ -252,12 +253,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         .to_image();
 
         // Save final blob color image
-        io::save_rgba_image_as(
-            &blob_rgba,
-            &base_path,
-            &format!("{counter}")[..],
-            dpi,
-        )?;
+        io::save_rgba_image_as(&blob_rgba, &base_path, &format!("{counter}")[..], dpi)?;
 
         counter += 1;
     }

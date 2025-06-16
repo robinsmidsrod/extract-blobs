@@ -3,9 +3,7 @@ use image::Luma;
 use image::Rgba;
 
 /// Extract the alpha channel of a color image into a grayscale image
-pub(crate) fn extract(
-    image: &ImageBuffer<Rgba<u8>, Vec<u8>>,
-) -> ImageBuffer<Luma<u8>, Vec<u8>> {
+pub(crate) fn extract(image: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> ImageBuffer<Luma<u8>, Vec<u8>> {
     let width = image.width();
     let height = image.height();
     // Create a new buffer to store the alpha channel
