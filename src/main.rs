@@ -17,7 +17,7 @@ mod io;
 #[command(version, about, long_about = None)]
 struct Cli {
     /// Input image files
-    #[arg()]
+    #[arg(required(true))]
     files: Vec<String>,
     /// Chroma key color
     #[arg(short, long, default_value = "#71AA5D")]
