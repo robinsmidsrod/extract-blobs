@@ -35,7 +35,7 @@ fn read_dpi_from_metadata(
 ) -> Result<Option<(u32, u32)>, Box<dyn std::error::Error>> {
     let dpi = match maybe_exif {
         Some(exif) => read_dpi_from_exif(&exif)?,
-        None => read_dpi_from_jfif(file_contents)?,
+        None => read_dpi_from_jfif(file_contents),
     };
     // TODO: Support reading PNG pixel density
     Ok(dpi)
@@ -85,19 +85,17 @@ fn read_dpi_from_exif(
 }
 
 /// Read pixel density from JPEG JFIF header
-fn read_dpi_from_jfif(
-    file_contents: &[u8],
-) -> Result<Option<(u32, u32)>, Box<dyn std::error::Error>> {
+fn read_dpi_from_jfif(file_contents: &[u8]) -> Option<(u32, u32)> {
     let c = Cursor::new(file_contents);
     let r = BufReader::new(c);
     let reader = jfifdump::Reader::new(r);
     let Ok(mut reader) = reader else {
-        return Ok(None);
+        return None;
     };
     loop {
         let next_segment = reader.next_segment();
         let Ok(next_segment) = next_segment else {
-            return Ok(None);
+            return None;
         };
         match next_segment.kind {
             SegmentKind::Eoi => break,
@@ -111,13 +109,13 @@ fn read_dpi_from_jfif(
                 // unit=1 means pixels per inch (2.54cm)
                 // unit=2 means pixels per centimeter
                 if jfif.unit == 1 {
-                    return Ok(Some((jfif.x_density as u32, jfif.y_density as u32)));
+                    return Some((jfif.x_density as u32, jfif.y_density as u32));
                 }
             }
             _ => {}
         }
     }
-    Ok(None)
+    None
 }
 
 /// Save grayscale image to file with suffix appended before extension
