@@ -34,7 +34,7 @@ fn read_dpi_from_metadata(
     maybe_exif: Option<Vec<u8>>,
 ) -> Result<Option<(u32, u32)>, Box<dyn std::error::Error>> {
     let dpi = match maybe_exif {
-        Some(exif) => read_dpi_from_exif(&exif)?,
+        Some(exif) => read_dpi_from_exif(&exif),
         None => read_dpi_from_jfif(file_contents),
     };
     // TODO: Support reading PNG pixel density
@@ -42,31 +42,29 @@ fn read_dpi_from_metadata(
 }
 
 /// Read pixel density from EXIF header
-fn read_dpi_from_exif(
-    exif_raw: &Vec<u8>,
-) -> Result<Option<(u32, u32)>, Box<dyn std::error::Error>> {
+fn read_dpi_from_exif(exif_raw: &Vec<u8>) -> Option<(u32, u32)> {
     let reader = exif::Reader::new();
     let maybe_exif = reader.read_raw(exif_raw.to_vec());
     let exif = match maybe_exif {
         Ok(d) => d,
-        Err(_) => return Ok(None),
+        Err(_) => return None,
     };
     let unit = exif.get_field(Tag::ResolutionUnit, In::PRIMARY);
     let x_res = exif.get_field(Tag::XResolution, In::PRIMARY);
     let y_res = exif.get_field(Tag::YResolution, In::PRIMARY);
-    let Some(unit) = unit else { return Ok(None) };
-    let Some(x_res) = x_res else { return Ok(None) };
-    let Some(y_res) = y_res else { return Ok(None) };
+    let Some(unit) = unit else { return None };
+    let Some(x_res) = x_res else { return None };
+    let Some(y_res) = y_res else { return None };
     let Some(unit) = unit.value.get_uint(0) else {
-        return Ok(None);
+        return None;
     };
     let x_res = match x_res.value {
         exif::Value::Rational(ref vec) if !vec.is_empty() => vec[0].to_f32() as u32,
-        _ => return Ok(None),
+        _ => return None,
     };
     let y_res = match y_res.value {
         exif::Value::Rational(ref vec) if !vec.is_empty() => vec[0].to_f32() as u32,
-        _ => return Ok(None),
+        _ => return None,
     };
     // println!("EXIF: unit={:?}, xres={:?}, yres={:?}", unit, x_res, y_res);
     // https://www.media.mit.edu/pia/Research/deepview/exif.html#ExifTags
@@ -74,14 +72,14 @@ fn read_dpi_from_exif(
     // 2 means inch
     // 3 means centimeter
     if unit == 2 {
-        return Ok(Some((x_res, y_res)));
+        return Some((x_res, y_res));
     }
     if unit == 3 {
         let x_res = (x_res as f32 * 2.54) as u32;
         let y_res = (y_res as f32 * 2.54) as u32;
-        return Ok(Some((x_res, y_res)));
+        return Some((x_res, y_res));
     }
-    Ok(None)
+    None
 }
 
 /// Read pixel density from JPEG JFIF header
