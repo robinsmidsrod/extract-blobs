@@ -24,21 +24,18 @@ pub(crate) fn open_image(
     let mut decoder = image_reader.into_decoder()?;
     let maybe_exif = decoder.exif_metadata()?;
     let image = DynamicImage::from_decoder(decoder)?;
-    let maybe_dpi = read_dpi_from_metadata(file_contents.as_slice(), maybe_exif)?;
+    let maybe_dpi = read_dpi_from_metadata(file_contents.as_slice(), maybe_exif);
     Ok((image, maybe_dpi))
 }
 
 /// Read pixel density from file metadata
-fn read_dpi_from_metadata(
-    file_contents: &[u8],
-    maybe_exif: Option<Vec<u8>>,
-) -> Result<Option<(u32, u32)>, Box<dyn std::error::Error>> {
+fn read_dpi_from_metadata(file_contents: &[u8], maybe_exif: Option<Vec<u8>>) -> Option<(u32, u32)> {
     let dpi = match maybe_exif {
         Some(exif) => read_dpi_from_exif(&exif),
         None => read_dpi_from_jfif(file_contents),
     };
     // TODO: Support reading PNG pixel density
-    Ok(dpi)
+    dpi
 }
 
 /// Read pixel density from EXIF header
