@@ -13,7 +13,7 @@ use image::Luma;
 use image::Rgba;
 use jfifdump::SegmentKind;
 
-// Open image file and include raw EXIF data, if any
+/// Open image file and include raw EXIF data, if any
 pub(crate) fn open_image(
     file: &PathBuf,
 ) -> Result<(DynamicImage, Option<(u32, u32)>), Box<dyn std::error::Error>> {
@@ -132,7 +132,7 @@ pub(crate) fn save_luma_image_as(
     Ok(())
 }
 
-/// Save RGBA image to file with suffix appended before extension
+/// Save RGBA image to PNG file with suffix appended before extension (includes pixel density header)
 pub(crate) fn save_rgba_image_as(
     img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
     base_path: &PathBuf,
@@ -158,9 +158,6 @@ pub(crate) fn save_rgba_image_as(
         unit: png::Unit::Meter,
     }));
     encoder.write_header()?.write_image_data(&buffer)?;
-
-    //img.save(&filename)?;
-
     println!("{filename}: saved");
     Ok(())
 }
