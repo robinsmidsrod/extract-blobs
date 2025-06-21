@@ -116,7 +116,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::error::Error>> {
-
     // Figure out path stuff
     let base_dir = Path::new(&file).parent().unwrap();
     let base_filename = Path::new(&file).file_stem().unwrap();
@@ -236,7 +235,11 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         // Blur mask image
         let blob = imageproc::filter::gaussian_blur_f32(&blob, config.blur_edge_factor);
         if config.save_intermediary_images {
-            io::save_luma_image_as(&blob, &base_path, &format!("mask-{blob_number}-d-deskewed")[..])?;
+            io::save_luma_image_as(
+                &blob,
+                &base_path,
+                &format!("mask-{blob_number}-d-deskewed")[..],
+            )?;
         }
 
         // Rotate color image
