@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use image::ImageBuffer;
+use image::ImageResult;
 use image::Luma;
 use image::Rgba;
 use imageproc::hough::LineDetectionOptions;
@@ -64,7 +65,7 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     config: &Config,
     base_path: &PathBuf,
     index: u32,
-) -> Result<f32, Box<dyn std::error::Error>> {
+) -> ImageResult<f32> {
     // Detect edges in image
     // NB: I have no idea how low/high thresholds work, but a value of 1.0 for both seems to do the trick
     let mut image = imageproc::edges::canny(&image, 1.0, 1.0);

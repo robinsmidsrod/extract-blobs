@@ -9,6 +9,7 @@ use exif::Tag;
 use image::DynamicImage;
 use image::ImageBuffer;
 use image::ImageDecoder;
+use image::ImageResult;
 use image::Luma;
 use image::Rgba;
 use jfifdump::SegmentKind;
@@ -118,7 +119,7 @@ pub(crate) fn save_luma_image_as(
     img: &ImageBuffer<Luma<u8>, Vec<u8>>,
     base_path: &PathBuf,
     suffix: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> ImageResult<()> {
     let filename = format!("{}-{}.{}", base_path.display(), suffix, "png");
     img.save(&filename)?;
     println!("{filename}: saved");
