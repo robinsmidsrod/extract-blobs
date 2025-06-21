@@ -1,9 +1,9 @@
-use color::AlphaColor;
+use color::{AlphaColor, ParseError};
 use image::Rgba;
 use palette::{FromColor, Lab};
 
 /// Parse a string into a color, with format like this #RRGGBB
-pub(crate) fn parse_color(color: &str) -> Result<Rgba<u8>, Box<dyn std::error::Error>> {
+pub(crate) fn parse_color(color: &str) -> Result<Rgba<u8>, ParseError> {
     let color = color::parse_color(color)?;
     let color: AlphaColor<color::Srgb> = color.to_alpha_color();
     let color = color.to_rgba8();
