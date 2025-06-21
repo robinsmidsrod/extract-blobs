@@ -211,17 +211,17 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
     // Extract individual blobs from the alpha channel
     let blobs = extraction::extract_blobs(&image_mask);
     println!("{}: found {} blobs", file.display(), blobs.len());
-    let mut counter = 1u32;
-    for blob in &blobs {
+    for (index, blob) in blobs.iter().enumerate() {
+        let blob_number = index as u32 + 1;
         if config.save_intermediary_images {
-            io::save_luma_image_as(&blob, &base_path, &format!("mask-{counter}-a")[..])?;
+            io::save_luma_image_as(&blob, &base_path, &format!("mask-{blob_number}-a")[..])?;
         }
 
         // Compute values needed for image rotation
         let bounding_box = detection::compute_bounding_box(&blob, config);
         let center = detection::compute_center_from_rectangle(&bounding_box, config);
         let deskew_angle =
-            detection::compute_deskew_angle_for_rectangle(&blob, &config, &base_path, counter)?;
+            detection::compute_deskew_angle_for_rectangle(&blob, &config, &base_path, blob_number)?;
 
         // Rotate mask image
         let black_luma = Luma([0u8]);
@@ -236,7 +236,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         // Blur mask image
         let blob = imageproc::filter::gaussian_blur_f32(&blob, config.blur_edge_factor);
         if config.save_intermediary_images {
-            io::save_luma_image_as(&blob, &base_path, &format!("mask-{counter}-d-deskewed")[..])?;
+            io::save_luma_image_as(&blob, &base_path, &format!("mask-{blob_number}-d-deskewed")[..])?;
         }
 
         // Rotate color image
@@ -262,9 +262,7 @@ fn process_file(file: &PathBuf, config: &Config) -> Result<(), Box<dyn std::erro
         .to_image();
 
         // Save final blob color image
-        io::save_rgba_image_as(&blob_rgba, &base_path, &format!("{counter}")[..], dpi)?;
-
-        counter += 1;
+        io::save_rgba_image_as(&blob_rgba, &base_path, &format!("{blob_number}")[..], dpi)?;
     }
 
     Ok(())
