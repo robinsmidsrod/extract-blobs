@@ -11,12 +11,13 @@ use imageproc::rect::Rect;
 
 use itertools::Itertools; // for sorted() iterator function
 
-use crate::Config;
+use crate::BlobExtractor;
+use crate::io;
 
 /// Compute bounding box from grayscale image, any non-black color is considered part of the bounding box
 pub(crate) fn compute_bounding_box(
     image: &ImageBuffer<Luma<u8>, Vec<u8>>,
-    config: &Config,
+    config: &BlobExtractor,
 ) -> Rect {
     let mut left = image.width();
     let mut top = image.height();
@@ -48,7 +49,7 @@ pub(crate) fn compute_bounding_box(
 }
 
 /// Find center point in a rectangle
-pub(crate) fn compute_center_from_rectangle(rect: &Rect, config: &Config) -> Point<u32> {
+pub(crate) fn compute_center_from_rectangle(rect: &Rect, config: &BlobExtractor) -> Point<u32> {
     let center = imageproc::point::Point::new(
         rect.left() as u32 + rect.width() / 2,
         rect.top() as u32 + rect.height() / 2,
@@ -62,7 +63,7 @@ pub(crate) fn compute_center_from_rectangle(rect: &Rect, config: &Config) -> Poi
 /// Compute the deskew angle for a rectangular blob
 pub(crate) fn compute_deskew_angle_for_rectangle(
     image: &ImageBuffer<Luma<u8>, Vec<u8>>,
-    config: &Config,
+    config: &BlobExtractor,
     base_path: &PathBuf,
     index: u32,
 ) -> ImageResult<f32> {
@@ -70,7 +71,7 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     // NB: I have no idea how low/high thresholds work, but a value of 1.0 for both seems to do the trick
     let mut image = imageproc::edges::canny(&image, 1.0, 1.0);
     if config.save_intermediary_images {
-        crate::io::save_luma_image_as(&image, base_path, &format!("mask-{index}-b-edges")[..])?;
+        io::save_luma_image_as(&image, base_path, &format!("mask-{index}-b-edges")[..])?;
     }
 
     // Find lines matching edges
@@ -86,7 +87,7 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     let grey_luma = Luma([128u8]);
     imageproc::hough::draw_polar_lines_mut(&mut image, &lines[..], grey_luma);
     if config.save_intermediary_images {
-        crate::io::save_luma_image_as(&image, base_path, &format!("mask-{index}-c-lines")[..])?;
+        io::save_luma_image_as(&image, base_path, &format!("mask-{index}-c-lines")[..])?;
     }
 
     // Rotate lines so that they all point in the same direction
