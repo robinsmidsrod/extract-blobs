@@ -70,7 +70,7 @@ fn validate_blur_edge_factor(value: &str) -> Result<f32, String> {
 fn validate_chroma_key_color(value: &str) -> Result<Rgba<u8>, String> {
     match color_ops::parse_color(value) {
         Ok(color) => Ok(color),
-        Err(e) => Err(e.to_string())
+        Err(e) => Err(e.to_string()),
     }
 }
 
