@@ -15,7 +15,7 @@ mod io;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-struct Cli {
+struct Args {
     /// Input image files
     #[arg(required(true))]
     files: Vec<PathBuf>,
@@ -85,22 +85,22 @@ struct Config {
 }
 
 pub fn run(args: ArgsOs) -> Result<(), Box<dyn std::error::Error>> {
-    let cli = Cli::parse_from(args);
+    let args = Args::parse_from(args);
     let config = Config {
-        chroma_key_color: color_ops::parse_color(&cli.chroma_key_color)?,
-        floodfill_fuzz: cli.floodfill_fuzz,
-        trim_edges: cli.trim_edges,
-        grow_edges: cli.grow_edges,
+        chroma_key_color: color_ops::parse_color(&args.chroma_key_color)?,
+        floodfill_fuzz: args.floodfill_fuzz,
+        trim_edges: args.trim_edges,
+        grow_edges: args.grow_edges,
         floodfill_color: Rgba([0, 0, 0, 0]), // transparent
         border_thickness: 1,
-        blur_edge_factor: cli.blur_edge_factor,
-        min_pixels_touching_line: cli.min_pixels_touching_line,
-        max_lines: cli.max_lines,
-        max_blob_rotation: cli.max_blob_rotation,
-        dpi: cli.dpi,
-        save_intermediary_images: cli.save_intermediary_images,
-        verbose: cli.verbose,
-        ignore_detected_dpi: cli.ignore_detected_dpi,
+        blur_edge_factor: args.blur_edge_factor,
+        min_pixels_touching_line: args.min_pixels_touching_line,
+        max_lines: args.max_lines,
+        max_blob_rotation: args.max_blob_rotation,
+        dpi: args.dpi,
+        save_intermediary_images: args.save_intermediary_images,
+        verbose: args.verbose,
+        ignore_detected_dpi: args.ignore_detected_dpi,
     };
     for file_path in &cli.files {
         process_file(&file_path, &config)?;
