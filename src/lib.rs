@@ -102,8 +102,8 @@ pub fn run(args: ArgsOs) -> Result<(), Box<dyn std::error::Error>> {
         verbose: args.verbose,
         ignore_detected_dpi: args.ignore_detected_dpi,
     };
-    for file_path in &cli.files {
-        process_file(&file_path, &config)?;
+    for file in args.files {
+        process_file(&file, &config)?;
         println!("");
     }
     Ok(())
