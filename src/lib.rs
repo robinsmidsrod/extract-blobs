@@ -20,8 +20,8 @@ struct Args {
     #[arg(required(true))]
     files: Vec<PathBuf>,
     /// Chroma key color
-    #[arg(short, long, default_value = "#71AA5D")]
-    chroma_key_color: String,
+    #[arg(short, long, default_value = "#71AA5D", value_parser = validate_chroma_key_color)]
+    chroma_key_color: Rgba<u8>,
     /// Floodfill fuzz (euclidean distance)
     #[arg(short('f'), long, default_value_t = 17.0)]
     floodfill_fuzz: f32,
@@ -67,6 +67,13 @@ fn validate_blur_edge_factor(value: &str) -> Result<f32, String> {
     Ok(num)
 }
 
+fn validate_chroma_key_color(value: &str) -> Result<Rgba<u8>, String> {
+    match color_ops::parse_color(value) {
+        Ok(color) => Ok(color),
+        Err(e) => Err(e.to_string())
+    }
+}
+
 struct Config {
     chroma_key_color: Rgba<u8>,
     floodfill_fuzz: f32,
@@ -87,7 +94,7 @@ struct Config {
 pub fn run(args: ArgsOs) -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse_from(args);
     let config = Config {
-        chroma_key_color: color_ops::parse_color(&args.chroma_key_color)?,
+        chroma_key_color: args.chroma_key_color,
         floodfill_fuzz: args.floodfill_fuzz,
         trim_edges: args.trim_edges,
         grow_edges: args.grow_edges,
