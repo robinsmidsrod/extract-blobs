@@ -7,7 +7,6 @@ use wild::ArgsOs;
 use extractor::BlobExtractor;
 
 mod arg_validators;
-mod color_ops;
 mod extractor;
 
 #[derive(Parser, Debug)]

@@ -4,7 +4,7 @@ use image::ImageBuffer;
 use image::Rgba;
 use imageproc::rect::Rect;
 
-use crate::color_ops;
+mod color_ops;
 
 /// Draws a border into the specified image buffer with the specified color and thickness
 /// NB: The image canvas is not made bigger
