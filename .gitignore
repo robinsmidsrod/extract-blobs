@@ -1,3 +1,4 @@
 /target
 /.vscode
 /images/*.png
+/images/*.txt
