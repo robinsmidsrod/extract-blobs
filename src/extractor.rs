@@ -236,7 +236,7 @@ impl BlobExtractor {
             let mut lt = LepTess::new(Some(&self.tessdata.to_string_lossy()), &self.ocr_language)?;
             // https://houqp.github.io/leptess/leptess/enum.Variable.html#variant.TesseditPagesegMode
             lt.set_variable(leptess::Variable::TesseditPagesegMode, &self.ocr_psm)?;
-            lt.set_variable( leptess::Variable::PreserveInterwordSpaces, "1")?;
+            lt.set_variable(leptess::Variable::PreserveInterwordSpaces, "1")?;
             let img_filename = format!("{}-{}.{}", self.base_path.display(), blob_number, "png");
             let text_filename = format!("{}-{}.{}", self.base_path.display(), blob_number, "txt");
             lt.set_image(&img_filename)?;
