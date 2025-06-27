@@ -7,7 +7,6 @@ use wild::ArgsOs;
 use extractor::BlobExtractor;
 
 mod color_ops;
-mod detection;
 mod extraction;
 mod extractor;
 mod io;

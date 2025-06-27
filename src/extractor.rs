@@ -10,9 +10,10 @@ use imageproc::{distance_transform::Norm, geometric_transformations::Interpolati
 use itertools::Itertools; // for join() iterator method
 use leptess::LepTess;
 
-use crate::{Args, detection, extraction, io};
+use crate::{Args, extraction, io};
 
 mod alpha_channel;
+mod detection;
 mod drawing;
 
 pub struct BlobExtractor {
