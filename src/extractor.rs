@@ -97,85 +97,7 @@ impl BlobExtractor {
         println!("{}: found {} blobs", self.file.display(), blobs.len());
         for (index, blob) in blobs.iter().enumerate() {
             let blob_number = index as u32 + 1;
-            if self.save_intermediary_images {
-                io::save_luma_image_as(
-                    &blob,
-                    &self.base_path,
-                    &format!("mask-{blob_number}-a")[..],
-                )?;
-            }
-
-            // Compute values needed for image rotation
-            let bounding_box = detection::compute_bounding_box(&blob, &self);
-            let center = detection::compute_center_from_rectangle(&bounding_box, &self);
-            let deskew_angle = detection::compute_deskew_angle_for_rectangle(
-                &blob,
-                &self,
-                &self.base_path,
-                blob_number,
-            )?;
-
-            // Rotate mask image
-            let black_luma = Luma([0u8]);
-            let blob = imageproc::geometric_transformations::rotate(
-                &blob,
-                point_to_tuple(center),
-                angle_to_radians(deskew_angle),
-                Interpolation::Bicubic,
-                black_luma,
-            );
-
-            // Blur mask image
-            let blob = imageproc::filter::gaussian_blur_f32(&blob, self.blur_edge_factor);
-            if self.save_intermediary_images {
-                io::save_luma_image_as(
-                    &blob,
-                    &self.base_path,
-                    &format!("mask-{blob_number}-d-deskewed")[..],
-                )?;
-            }
-
-            // Rotate color image
-            let black_rgba = Rgba([0, 0, 0, 0]);
-            let mut blob_rgba = imageproc::geometric_transformations::rotate(
-                &image_rgba,
-                point_to_tuple(center),
-                angle_to_radians(deskew_angle),
-                Interpolation::Bicubic,
-                black_rgba,
-            );
-
-            // Crop color image with mask set as new alpha channel
-            alpha_channel::replace(&mut blob_rgba, &blob);
-            let bounding_box = detection::compute_bounding_box(&blob, &self);
-            let blob_rgba = image::imageops::crop_imm(
-                &blob_rgba,
-                bounding_box.left() as u32,
-                bounding_box.top() as u32,
-                bounding_box.width(),
-                bounding_box.height(),
-            )
-            .to_image();
-
-            // Save final blob color image
-            io::save_rgba_image_as(
-                &blob_rgba,
-                &self.base_path,
-                &format!("{blob_number}")[..],
-                dpi,
-            )?;
-
-            // Extract text from image using Tesseract OCR
-            let mut lt = LepTess::new(Some(&self.tessdata.to_string_lossy()), &self.ocr_language)?;
-            // https://houqp.github.io/leptess/leptess/enum.Variable.html#variant.TesseditPagesegMode
-            lt.set_variable(leptess::Variable::TesseditPagesegMode, &self.ocr_psm)?;
-            lt.set_variable(leptess::Variable::PreserveInterwordSpaces, "1")?;
-            let img_filename = format!("{}-{}.{}", self.base_path.display(), blob_number, "png");
-            let text_filename = format!("{}-{}.{}", self.base_path.display(), blob_number, "txt");
-            lt.set_image(&img_filename)?;
-            let text = lt.get_utf8_text()?;
-            fs::write(&text_filename, &text)?;
-            println!("{}: saved OCR text - {} bytes", &text_filename, &text.len());
+            self.process_blob(blob_number, blob, &image_rgba, dpi)?;
         }
 
         Ok(())
@@ -256,6 +178,78 @@ impl BlobExtractor {
             io::save_rgba_image_as(&*image, &self.base_path, "e-with-mask", dpi)?;
         }
         Ok(image_mask)
+    }
+
+    /// Process a single blob from the image mask
+    fn process_blob(
+        self: &Self,
+        blob_number: u32,
+        blob: &image::ImageBuffer<Luma<u8>, Vec<u8>>,
+        image: &image::ImageBuffer<Rgba<u8>, Vec<u8>>,
+        dpi: (u32, u32),
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        if self.save_intermediary_images {
+            io::save_luma_image_as(&blob, &self.base_path, &format!("mask-{blob_number}-a")[..])?;
+        }
+        let bounding_box = detection::compute_bounding_box(&blob, &self);
+        let center = detection::compute_center_from_rectangle(&bounding_box, &self);
+        let deskew_angle = detection::compute_deskew_angle_for_rectangle(
+            &blob,
+            &self,
+            &self.base_path,
+            blob_number,
+        )?;
+        let black_luma = Luma([0u8]);
+        let blob = imageproc::geometric_transformations::rotate(
+            &blob,
+            point_to_tuple(center),
+            angle_to_radians(deskew_angle),
+            Interpolation::Bicubic,
+            black_luma,
+        );
+        let blob = imageproc::filter::gaussian_blur_f32(&blob, self.blur_edge_factor);
+        if self.save_intermediary_images {
+            io::save_luma_image_as(
+                &blob,
+                &self.base_path,
+                &format!("mask-{blob_number}-d-deskewed")[..],
+            )?;
+        }
+        let black_rgba = Rgba([0, 0, 0, 0]);
+        let mut blob_rgba = imageproc::geometric_transformations::rotate(
+            image,
+            point_to_tuple(center),
+            angle_to_radians(deskew_angle),
+            Interpolation::Bicubic,
+            black_rgba,
+        );
+        alpha_channel::replace(&mut blob_rgba, &blob);
+        let bounding_box = detection::compute_bounding_box(&blob, &self);
+        let blob_rgba = image::imageops::crop_imm(
+            &blob_rgba,
+            bounding_box.left() as u32,
+            bounding_box.top() as u32,
+            bounding_box.width(),
+            bounding_box.height(),
+        )
+        .to_image();
+        io::save_rgba_image_as(
+            &blob_rgba,
+            &self.base_path,
+            &format!("{blob_number}")[..],
+            dpi,
+        )?;
+        // Extract text from final image using OCR
+        let mut lt = LepTess::new(Some(&self.tessdata.to_string_lossy()), &self.ocr_language)?;
+        lt.set_variable(leptess::Variable::TesseditPagesegMode, &self.ocr_psm)?;
+        lt.set_variable(leptess::Variable::PreserveInterwordSpaces, "1")?;
+        let img_filename = format!("{}-{}.{}", self.base_path.display(), blob_number, "png");
+        let text_filename = format!("{}-{}.{}", self.base_path.display(), blob_number, "txt");
+        lt.set_image(&img_filename)?;
+        let text = lt.get_utf8_text()?;
+        fs::write(&text_filename, &text)?;
+        println!("{}: saved OCR text - {} bytes", &text_filename, &text.len());
+        Ok(())
     }
 }
 
