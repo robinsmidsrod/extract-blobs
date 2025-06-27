@@ -90,25 +90,7 @@ impl BlobExtractor {
         }
 
         self.remove_chroma_key_color_from_image(&mut image_rgba, dpi)?;
-
-        // Extract alpha channel from color image so we can clean it up
-        let mut image_mask = alpha_channel::extract(&image_rgba);
-        if self.save_intermediary_images {
-            io::save_luma_image_as(&image_mask, &self.base_path, "c-mask")?;
-        }
-
-        // Remove specs and dust from alpha channel, trim/grow outer edges slightly
-        imageproc::morphology::erode_mut(&mut image_mask, Norm::L1, self.trim_edges);
-        imageproc::morphology::dilate_mut(&mut image_mask, Norm::L1, self.grow_edges);
-        if self.save_intermediary_images {
-            io::save_luma_image_as(&image_mask, &self.base_path, "d-mask-cleaned")?;
-        }
-
-        // Replace alpha channel in the color image with the cleaned one
-        alpha_channel::replace(&mut image_rgba, &image_mask);
-        if self.save_intermediary_images {
-            io::save_rgba_image_as(&image_rgba, &self.base_path, "e-with-mask", dpi)?;
-        }
+        let image_mask = self.cleanup_and_extract_image_mask(&mut image_rgba, dpi)?;
 
         // Extract individual blobs from the alpha channel
         let blobs = extraction::extract_blobs(&image_mask);
@@ -252,6 +234,28 @@ impl BlobExtractor {
             io::save_rgba_image_as(&image.deref(), &self.base_path, "b-floodfilled", dpi)?;
         }
         Ok(())
+    }
+
+    /// Clean up alpha channel in color image and extract it
+    fn cleanup_and_extract_image_mask(
+        self: &Self,
+        image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
+        dpi: (u32, u32),
+    ) -> Result<image::ImageBuffer<Luma<u8>, Vec<u8>>, Box<dyn std::error::Error>> {
+        let mut image_mask = alpha_channel::extract(&image.deref());
+        if self.save_intermediary_images {
+            io::save_luma_image_as(&image_mask, &self.base_path, "c-mask")?;
+        }
+        imageproc::morphology::erode_mut(&mut image_mask, Norm::L1, self.trim_edges);
+        imageproc::morphology::dilate_mut(&mut image_mask, Norm::L1, self.grow_edges);
+        if self.save_intermediary_images {
+            io::save_luma_image_as(&image_mask, &self.base_path, "d-mask-cleaned")?;
+        }
+        alpha_channel::replace(image, &image_mask);
+        if self.save_intermediary_images {
+            io::save_rgba_image_as(&*image, &self.base_path, "e-with-mask", dpi)?;
+        }
+        Ok(image_mask)
     }
 }
 
