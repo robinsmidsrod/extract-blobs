@@ -9,7 +9,6 @@ use extractor::BlobExtractor;
 mod alpha_channel;
 mod color_ops;
 mod detection;
-mod drawing;
 mod extraction;
 mod extractor;
 mod io;
