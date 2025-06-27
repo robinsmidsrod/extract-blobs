@@ -1,15 +1,4 @@
-use color::{AlphaColor, ParseError};
-use image::Rgba;
 use palette::{FromColor, Lab};
-
-/// Parse a string into a color, with format like this #RRGGBB
-pub(crate) fn parse_color(color: &str) -> Result<Rgba<u8>, ParseError> {
-    let color = color::parse_color(color)?;
-    let color: AlphaColor<color::Srgb> = color.to_alpha_color();
-    let color = color.to_rgba8();
-    let color = Rgba(color.to_u8_array());
-    Ok(color)
-}
 
 /// Figure out how similar two colors are based on euclidean distance in Lab colorspace
 pub(crate) fn color_similarity(a: &palette::Srgb<f32>, b: &palette::Srgb<f32>) -> f32 {
