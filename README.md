@@ -50,8 +50,6 @@ filenames than your shell supports.
 
 ```sh
 sudo apt install libleptonica-dev libtesseract-dev clang
-# Install any tesseract languages you need
-sudo apt install tesseract-ocr-eng tesseract-ocr-nor
 ```
 
 ### Windows
@@ -87,4 +85,19 @@ cargo build --release
 
 ```sh
 cargo install --path .
+```
+
+## Install tesseract language support files
+
+### Linux
+
+```sh
+# Install any tesseract languages you need
+sudo apt install tesseract-ocr-eng tesseract-ocr-nor
+```
+
+### All other operating systems
+
+```sh
+git clone https://github.com/tesseract-ocr/tessdata_best
 ```
