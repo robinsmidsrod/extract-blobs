@@ -1,5 +1,6 @@
 use std::{
     // ffi::OsString,
+    fs,
     path::{Path, PathBuf},
 };
 
@@ -7,6 +8,7 @@ use image::Pixel; // for to_rgb() method
 use image::{Luma, Rgba};
 use imageproc::{distance_transform::Norm, geometric_transformations::Interpolation};
 use itertools::Itertools; // for join() iterator method
+use leptess::LepTess;
 
 use crate::{Args, alpha_channel, detection, drawing, extraction, io};
 
@@ -223,6 +225,17 @@ impl BlobExtractor {
                 &format!("{blob_number}")[..],
                 dpi,
             )?;
+
+            // Extract text from image using Tesseract OCR
+            let mut lt = LepTess::new(Some(&self.tessdata.to_string_lossy()), &self.ocr_language)?;
+            // https://houqp.github.io/leptess/leptess/enum.Variable.html#variant.TesseditPagesegMode
+            lt.set_variable(leptess::Variable::TesseditPagesegMode, &self.ocr_psm)?;
+            let img_filename = format!("{}-{}.{}", self.base_path.display(), blob_number, "png");
+            let text_filename = format!("{}-{}.{}", self.base_path.display(), blob_number, "txt");
+            lt.set_image(&img_filename)?;
+            let text = lt.get_utf8_text()?;
+            fs::write(&text_filename, &text)?;
+            println!("{}: saved OCR text - {} bytes", &text_filename, &text.len());
         }
 
         Ok(())
