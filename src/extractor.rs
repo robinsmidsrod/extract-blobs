@@ -29,6 +29,9 @@ pub struct BlobExtractor {
     pub verbose: bool,
     dpi: u32,
     ignore_detected_dpi: bool,
+    ocr_language: String,
+    tessdata: PathBuf,
+    ocr_psm: String,
 }
 
 impl BlobExtractor {
@@ -56,6 +59,9 @@ impl BlobExtractor {
             save_intermediary_images: args.save_intermediary_images,
             verbose: args.verbose,
             ignore_detected_dpi: args.ignore_detected_dpi,
+            ocr_language: args.ocr_language.to_owned(),
+            ocr_psm: args.ocr_psm.to_owned(),
+            tessdata: args.tessdata.to_owned(),
         }
     }
     pub fn process(self) -> Result<(), Box<dyn std::error::Error>> {

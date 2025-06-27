@@ -47,6 +47,15 @@ struct Args {
     /// Output image pixel density in inches
     #[arg(short('d'), long, default_value_t = 150)]
     dpi: u32,
+    /// Tesseract OCR language
+    #[arg(short('L'), long, default_value = "nor")]
+    ocr_language: String,
+    /// Tesseract OCR page-segmentation-mode
+    #[arg(short('P'), long, default_value = "3")]
+    ocr_psm: String,
+    /// Tesseract OCR data directory
+    #[arg(short('D'), long, default_value = "../tessdata_best")]
+    tessdata: PathBuf,
     /// Ignore detected DPI in input images
     #[arg(short('i'), long, default_value_t = false)]
     ignore_detected_dpi: bool,
