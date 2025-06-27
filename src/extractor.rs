@@ -101,12 +101,8 @@ impl BlobExtractor {
 
         // Detect dominant color in image
         if self.verbose {
-            let dominant_color_hex = detection::find_dominant_color_hex(&image_rgba);
-            println!(
-                "{}: dominant color is {}",
-                self.file.display(),
-                dominant_color_hex
-            );
+            let color = detection::find_dominant_color_hex(&image_rgba);
+            println!("{}: dominant color is {}", self.file.display(), color);
         }
 
         self.remove_chroma_key_color_from_image(&mut image_rgba, dpi)?;
