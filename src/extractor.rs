@@ -4,10 +4,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use image::Pixel; // for to_rgb() method
 use image::{Luma, Rgba};
 use imageproc::{distance_transform::Norm, geometric_transformations::Interpolation};
-use itertools::Itertools; // for join() iterator method
 use leptess::LepTess;
 
 use crate::Args;
@@ -105,9 +103,9 @@ impl BlobExtractor {
 
         // Detect dominant color in image
         if self.verbose {
-            let dominant_color_hex = find_dominant_color_hex(&image_rgba);
+            let dominant_color_hex = detection::find_dominant_color_hex(&image_rgba);
             println!(
-                "{}: dominant color is #{}",
+                "{}: dominant color is {}",
                 self.file.display(),
                 dominant_color_hex
             );
@@ -249,14 +247,6 @@ impl BlobExtractor {
     }
 }
 
-fn find_dominant_color_hex(image_rgba: &image::ImageBuffer<Rgba<u8>, Vec<u8>>) -> String {
-    detection::find_dominant_color(image_rgba)
-        .to_rgb()
-        .channels()
-        .iter()
-        .map(|f| format!("{:X}", f))
-        .join("")
-}
 fn point_to_tuple(center: imageproc::point::Point<u32>) -> (f32, f32) {
     (center.x as f32, center.y as f32)
 }

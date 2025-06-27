@@ -4,11 +4,12 @@ use std::path::PathBuf;
 use image::ImageBuffer;
 use image::ImageResult;
 use image::Luma;
+use image::Pixel; // for to_rgb() method
 use image::Rgba;
 use imageproc::hough::LineDetectionOptions;
 use imageproc::point::Point;
 use imageproc::rect::Rect;
-use itertools::Itertools; // for sorted() iterator function
+use itertools::Itertools; // for sorted() and join() iterator function
 
 use super::io;
 use crate::BlobExtractor;
@@ -129,7 +130,7 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     Ok(inverted_angle)
 }
 
-// Find the color that occurs the most in the specified image
+/// Find the color that occurs the most in the specified image
 pub(crate) fn find_dominant_color(image: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> Rgba<u8> {
     let mut color_map: HashMap<Rgba<u8>, u32> = HashMap::new();
     for (_x, _y, pixel) in image.enumerate_pixels() {
@@ -144,4 +145,19 @@ pub(crate) fn find_dominant_color(image: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> Rgb
     let dominant_color_tuple = sorted_colors[0];
     let dominant_color = *dominant_color_tuple.0;
     dominant_color
+}
+
+/// Return the dominant color in the image as hex #RRGGBB
+pub(crate) fn find_dominant_color_hex(
+    image_rgba: &image::ImageBuffer<Rgba<u8>, Vec<u8>>,
+) -> String {
+    format!(
+        "#{}",
+        find_dominant_color(image_rgba)
+            .to_rgb()
+            .channels()
+            .iter()
+            .map(|f| format!("{:X}", f))
+            .join(""),
+    )
 }
