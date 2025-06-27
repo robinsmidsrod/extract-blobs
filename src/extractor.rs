@@ -76,23 +76,7 @@ impl BlobExtractor {
         let (image, maybe_dpi) = io::open_image(&self.file)?;
 
         // Decide which DPI to use for output images
-        let dpi = match maybe_dpi {
-            Some(dpi) => {
-                if self.verbose {
-                    println!("{}: detected DPI is {:?}", self.file.display(), dpi);
-                }
-                match self.ignore_detected_dpi {
-                    true => (self.dpi, self.dpi),
-                    false => dpi,
-                }
-            }
-            None => {
-                if self.verbose {
-                    println!("{}: unable to detect DPI", self.file.display());
-                }
-                (self.dpi, self.dpi)
-            }
-        };
+        let dpi = self.decide_output_dpi(maybe_dpi);
         if self.verbose {
             println!("{}: using DPI {:?}", self.file.display(), dpi);
         }
@@ -213,6 +197,27 @@ impl BlobExtractor {
         }
 
         Ok(())
+    }
+
+    /// Decide image output DPI from detected input image metadata
+    fn decide_output_dpi(self: &Self, maybe_dpi: Option<(u32, u32)>) -> (u32, u32) {
+        match maybe_dpi {
+            Some(dpi) => {
+                if self.verbose {
+                    println!("{}: detected DPI is {:?}", self.file.display(), dpi);
+                }
+                match self.ignore_detected_dpi {
+                    true => (self.dpi, self.dpi),
+                    false => dpi,
+                }
+            }
+            None => {
+                if self.verbose {
+                    println!("{}: unable to detect DPI", self.file.display());
+                }
+                (self.dpi, self.dpi)
+            }
+        }
     }
 
     /// Remove color matching chroma key color by drawing a border and floodfilling with fuzz
