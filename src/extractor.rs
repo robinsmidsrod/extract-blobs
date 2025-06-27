@@ -1,6 +1,7 @@
 use std::{
     // ffi::OsString,
     fs,
+    ops::Deref,
     path::{Path, PathBuf},
 };
 
@@ -96,9 +97,6 @@ impl BlobExtractor {
             println!("{}: using DPI {:?}", self.file.display(), dpi);
         }
 
-        let width = image.width();
-        let height = image.height();
-
         let mut image_rgba = image.to_rgba8();
 
         // Detect dominant color in image
@@ -111,32 +109,7 @@ impl BlobExtractor {
             );
         }
 
-        // Draw a thin border on color image with chroma key color
-        drawing::draw_border(
-            &mut image_rgba,
-            self.chroma_key_color,
-            0,
-            0,
-            width,
-            height,
-            self.border_thickness,
-        );
-        if self.save_intermediary_images {
-            io::save_rgba_image_as(&image_rgba, &self.base_path, "a-border", dpi)?;
-        }
-
-        // Floodfill color image with chroma key color, making it transparent, with a fuzz factor
-        drawing::flood_fill(
-            &mut image_rgba,
-            0,
-            0,
-            self.chroma_key_color,
-            self.floodfill_color,
-            self.floodfill_fuzz,
-        );
-        if self.save_intermediary_images {
-            io::save_rgba_image_as(&image_rgba, &self.base_path, "b-floodfilled", dpi)?;
-        }
+        self.remove_chroma_key_color_from_image(&mut image_rgba, dpi)?;
 
         // Extract alpha channel from color image so we can clean it up
         let mut image_mask = alpha_channel::extract(&image_rgba);
@@ -243,6 +216,40 @@ impl BlobExtractor {
             println!("{}: saved OCR text - {} bytes", &text_filename, &text.len());
         }
 
+        Ok(())
+    }
+
+    /// Remove color matching chroma key color by drawing a border and floodfilling with fuzz
+    fn remove_chroma_key_color_from_image(
+        self: &Self,
+        image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
+        dpi: (u32, u32),
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let width = image.width();
+        let height = image.height();
+        drawing::draw_border(
+            image,
+            self.chroma_key_color,
+            0,
+            0,
+            width,
+            height,
+            self.border_thickness,
+        );
+        if self.save_intermediary_images {
+            io::save_rgba_image_as(&image.deref(), &self.base_path, "a-border", dpi)?;
+        }
+        drawing::flood_fill(
+            image,
+            0,
+            0,
+            self.chroma_key_color,
+            self.floodfill_color,
+            self.floodfill_fuzz,
+        );
+        if self.save_intermediary_images {
+            io::save_rgba_image_as(&image.deref(), &self.base_path, "b-floodfilled", dpi)?;
+        }
         Ok(())
     }
 }
