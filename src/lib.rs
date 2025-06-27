@@ -6,7 +6,6 @@ use wild::ArgsOs;
 
 use extractor::BlobExtractor;
 
-mod alpha_channel;
 mod color_ops;
 mod detection;
 mod extraction;
