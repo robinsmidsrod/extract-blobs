@@ -8,11 +8,10 @@ use image::Rgba;
 use imageproc::hough::LineDetectionOptions;
 use imageproc::point::Point;
 use imageproc::rect::Rect;
-
 use itertools::Itertools; // for sorted() iterator function
 
+use super::io;
 use crate::BlobExtractor;
-use crate::io;
 
 /// Compute bounding box from grayscale image, any non-black color is considered part of the bounding box
 pub(crate) fn compute_bounding_box(

@@ -8,7 +8,6 @@ use extractor::BlobExtractor;
 
 mod color_ops;
 mod extractor;
-mod io;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
