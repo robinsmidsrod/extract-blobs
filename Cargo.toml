@@ -19,6 +19,15 @@ imageproc = "0.25.0"
 itertools = "0.14.0"
 jfifdump = "0.6.0"
 kamadak-exif = "0.6.1"
+leptess = "0.14.0"
 palette = "0.7.6"
 png = "0.17.16"
 wild = "2.2.1"
+
+[package.metadata.vcpkg]
+git = "https://github.com/microsoft/vcpkg"
+rev = "2025.06.13"
+dependencies = ["tesseract"]
+
+[package.metadata.vcpkg.target]
+x86_64-pc-windows-msvc = { triplet = "x64-windows-static" }

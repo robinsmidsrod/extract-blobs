@@ -43,3 +43,48 @@ Options:
 
 The filenames support glob patterns in them, which enables globbing for more
 filenames than your shell supports.
+
+## Installing build dependencies
+
+### Linux
+
+```sh
+sudo apt install libleptonica-dev libtesseract-dev clang
+# Install any tesseract languages you need
+sudo apt install tesseract-ocr-eng tesseract-ocr-nor
+```
+
+### Windows
+
+We need the tool [vcpkg](https://github.com/microsoft/vcpkg) to compile all of the external C/C++ dependencies.
+
+We use the tool [cargo-vcpkg](https://crates.io/crates/cargo-vcpkg) to manage the `vcpkg` installation.
+
+The [leptonica-sys](https://crates.io/crates/leptonica-sys) crate requires [LLVM](https://llvm.org)'s `libclang.dll` to properly compile.
+
+#### Install LLVM and make sure you add it to the PATH.
+
+```powershell
+winget install --interactive LLVM.LLVM
+```
+
+Restart your terminal to ensure LLVM is in the path.
+
+#### Install cargo-vcpkg and use it to build all dependencies:
+
+```powershell
+cargo install cargo-vcpkg
+cargo vcpkg -v build
+```
+
+## Building the release binary
+
+```sh
+cargo build --release
+```
+
+## Installing the release binary
+
+```sh
+cargo install --path .
+```
