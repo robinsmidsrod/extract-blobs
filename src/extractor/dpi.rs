@@ -22,7 +22,7 @@ impl Dpi {
         }
     }
 
-    /// Create instance from x and y values in meters
+    /// Create instance from x and y values in centimeters
     pub fn from_centimeter<T: Copy + Into<u32>>(x: T, y: T) -> Dpi {
         Dpi {
             x: (x.into() as f32 * 2.54) as u32,
@@ -30,12 +30,12 @@ impl Dpi {
         }
     }
 
-    /// Horizontal resultion in meters
+    /// Horizontal resolution in meters
     pub fn x_in_meters(&self) -> u32 {
         // 1 inch = 39.37 cm
         (self.x as f32 * 39.37) as u32
     }
-    /// Vertical resultion in meters
+    /// Vertical resolution in meters
     pub fn y_in_meters(&self) -> u32 {
         // 1 inch = 39.37 cm
         (self.y as f32 * 39.37) as u32
