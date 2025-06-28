@@ -1,5 +1,4 @@
-pub type Result<T> = core::result::Result<T, Error>;
-pub type Error = Box<dyn std::error::Error>;
+pub use self::error::{Error, Result};
 
 use std::path::PathBuf;
 
@@ -10,6 +9,7 @@ use wild::ArgsOs;
 use extractor::BlobExtractor;
 
 mod arg_validators;
+mod error;
 mod extractor;
 
 #[derive(Parser, Debug)]
