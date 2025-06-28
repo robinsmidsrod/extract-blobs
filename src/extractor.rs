@@ -61,10 +61,10 @@ impl BlobExtractor {
     }
     pub fn process(self) -> Result<()> {
         // Open image and maybe get pixel density in dots per inch
-        let (image, maybe_dpi) = io::open_image(&self.file)?;
+        let (image, dpi) = io::open_image(&self.file)?;
 
         // Decide which DPI to use for output images
-        let dpi = self.decide_output_dpi(maybe_dpi);
+        let dpi = self.decide_output_dpi(dpi);
         if self.verbose {
             println!("{}: using DPI {:?}", self.file.display(), dpi);
         }
@@ -92,8 +92,8 @@ impl BlobExtractor {
     }
 
     /// Decide image output DPI from detected input image metadata
-    fn decide_output_dpi(&self, maybe_dpi: Option<Dpi>) -> Dpi {
-        match maybe_dpi {
+    fn decide_output_dpi(&self, dpi: Option<Dpi>) -> Dpi {
+        match dpi {
             Some(dpi) => {
                 if self.verbose {
                     println!("{}: detected DPI is {:?}", self.file.display(), dpi);
