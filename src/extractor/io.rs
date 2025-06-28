@@ -6,6 +6,7 @@ use std::path::Path;
 
 use exif::In;
 use exif::Tag;
+use exif::Value;
 use image::DynamicImage;
 use image::ImageBuffer;
 use image::ImageDecoder;
@@ -41,42 +42,29 @@ fn read_dpi_from_metadata(file_contents: &[u8], maybe_exif: Option<Vec<u8>>) -> 
 /// Read pixel density from EXIF header
 fn read_dpi_from_exif(exif_raw: &[u8]) -> Option<(u32, u32)> {
     let reader = exif::Reader::new();
-    let maybe_exif = reader.read_raw(exif_raw.to_vec());
-    let exif = match maybe_exif {
-        Ok(d) => d,
-        Err(_) => return None,
-    };
-    let unit = exif.get_field(Tag::ResolutionUnit, In::PRIMARY);
-    let x_res = exif.get_field(Tag::XResolution, In::PRIMARY);
-    let y_res = exif.get_field(Tag::YResolution, In::PRIMARY);
-    let Some(unit) = unit else { return None };
-    let Some(x_res) = x_res else { return None };
-    let Some(y_res) = y_res else { return None };
-    let Some(unit) = unit.value.get_uint(0) else {
-        return None;
-    };
-    let x_res = match x_res.value {
-        exif::Value::Rational(ref vec) if !vec.is_empty() => vec[0].to_f32() as u32,
+    let exif = reader.read_raw(exif_raw.to_vec()).ok()?;
+    let unit = exif
+        .get_field(Tag::ResolutionUnit, In::PRIMARY)
+        .and_then(|unit| unit.value.get_uint(0))?;
+    let x_res = match &exif.get_field(Tag::XResolution, In::PRIMARY)?.value {
+        Value::Rational(vec) => vec.first().map(|value| value.to_f32() as u32),
         _ => return None,
-    };
-    let y_res = match y_res.value {
-        exif::Value::Rational(ref vec) if !vec.is_empty() => vec[0].to_f32() as u32,
+    }?;
+    let y_res = match &exif.get_field(Tag::YResolution, In::PRIMARY)?.value {
+        Value::Rational(vec) => vec.first().map(|value| value.to_f32() as u32),
         _ => return None,
-    };
+    }?;
     // println!("EXIF: unit={:?}, xres={:?}, yres={:?}", unit, x_res, y_res);
     // https://www.media.mit.edu/pia/Research/deepview/exif.html#ExifTags
-    // 1 means no-unit
-    // 2 means inch
-    // 3 means centimeter
-    if unit == 2 {
-        return Some((x_res, y_res));
+    match unit {
+        // 1 means no-unit (aspect ratio)
+        1 => None,
+        // 2 means inch
+        2 => Some((x_res, y_res)),
+        // 3 means centimeter
+        3 => Some(((x_res as f32 * 2.54) as u32, (y_res as f32 * 2.54) as u32)),
+        _ => None,
     }
-    if unit == 3 {
-        let x_res = (x_res as f32 * 2.54) as u32;
-        let y_res = (y_res as f32 * 2.54) as u32;
-        return Some((x_res, y_res));
-    }
-    None
 }
 
 /// Read pixel density from JPEG JFIF header
