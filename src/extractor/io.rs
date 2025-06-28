@@ -71,28 +71,25 @@ fn read_dpi_from_exif(exif_raw: &[u8]) -> Option<(u32, u32)> {
 fn read_dpi_from_jfif(file_contents: &[u8]) -> Option<(u32, u32)> {
     let c = Cursor::new(file_contents);
     let r = BufReader::new(c);
-    let reader = jfifdump::Reader::new(r);
-    let Ok(mut reader) = reader else {
-        return None;
-    };
+    let mut reader = jfifdump::Reader::new(r).ok()?;
     loop {
-        let next_segment = reader.next_segment();
-        let Ok(next_segment) = next_segment else {
-            return None;
-        };
-        match next_segment.kind {
+        match reader.next_segment().ok()?.kind {
+            // https://en.wikipedia.org/wiki/JPEG_File_Interchange_Format#File_format_structure
             SegmentKind::Eoi => break,
+            // https://en.wikipedia.org/wiki/JPEG_File_Interchange_Format#JFIF_APP0_marker_segment
             SegmentKind::App0Jfif(jfif) => {
-                // https://en.wikipedia.org/wiki/JPEG_File_Interchange_Format#JFIF_APP0_marker_segment
                 // println!(
                 //     "JFIF: unit={},x_density={},y_density={}",
                 //     jfif.unit, jfif.x_density, jfif.y_density
                 // );
-                // unit=0 means pixel aspect ratio (y:x)
-                // unit=1 means pixels per inch (2.54cm)
-                // unit=2 means pixels per centimeter
-                if jfif.unit == 1 {
-                    return Some((jfif.x_density as u32, jfif.y_density as u32));
+                match jfif.unit {
+                    // unit=0 means pixel aspect ratio (y:x)
+                    0 => return None,
+                    // unit=1 means pixels per inch (2.54cm)
+                    1 => return Some((jfif.x_density as u32, jfif.y_density as u32)),
+                    // unit=2 means pixels per centimeter
+                    2 => return None, // TODO
+                    _ => return None,
                 }
             }
             _ => {}
