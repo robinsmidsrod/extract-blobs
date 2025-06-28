@@ -17,8 +17,10 @@ use jfifdump::SegmentKind;
 
 use crate::Result;
 
+pub type Dpi = (u32, u32);
+
 /// Open image file and include raw EXIF data, if any
-pub(crate) fn open_image(file: &Path) -> Result<(DynamicImage, Option<(u32, u32)>)> {
+pub(crate) fn open_image(file: &Path) -> Result<(DynamicImage, Option<Dpi>)> {
     let file_contents = std::fs::read(file)?;
     let c = Cursor::new(file_contents.as_slice());
     let r = BufReader::new(c);
@@ -31,7 +33,7 @@ pub(crate) fn open_image(file: &Path) -> Result<(DynamicImage, Option<(u32, u32)
 }
 
 /// Read pixel density from file metadata
-fn read_dpi_from_metadata(file_contents: &[u8], exif: Option<Vec<u8>>) -> Option<(u32, u32)> {
+fn read_dpi_from_metadata(file_contents: &[u8], exif: Option<Vec<u8>>) -> Option<Dpi> {
     match exif {
         Some(exif) => read_dpi_from_exif(&exif),
         None => read_dpi_from_jfif(file_contents),
@@ -40,7 +42,7 @@ fn read_dpi_from_metadata(file_contents: &[u8], exif: Option<Vec<u8>>) -> Option
 }
 
 /// Read pixel density from EXIF header
-fn read_dpi_from_exif(exif_raw: &[u8]) -> Option<(u32, u32)> {
+fn read_dpi_from_exif(exif_raw: &[u8]) -> Option<Dpi> {
     let reader = exif::Reader::new();
     let exif = reader.read_raw(exif_raw.to_vec()).ok()?;
     let unit = exif
@@ -67,7 +69,7 @@ fn read_dpi_from_exif(exif_raw: &[u8]) -> Option<(u32, u32)> {
 }
 
 /// Read pixel density from JPEG JFIF header
-fn read_dpi_from_jfif(file_contents: &[u8]) -> Option<(u32, u32)> {
+fn read_dpi_from_jfif(file_contents: &[u8]) -> Option<Dpi> {
     let c = Cursor::new(file_contents);
     let r = BufReader::new(c);
     let mut reader = jfifdump::Reader::new(r).ok()?;
@@ -115,7 +117,7 @@ pub(crate) fn save_rgba_image_as(
     img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
     base_path: &Path,
     suffix: &str,
-    dpi: (u32, u32),
+    dpi: Dpi,
 ) -> Result<()> {
     let filename = format!("{}-{}.{}", base_path.display(), suffix, "png");
 

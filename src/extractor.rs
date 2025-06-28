@@ -4,7 +4,7 @@ use image::{Luma, Rgba};
 use imageproc::{distance_transform::Norm, geometric_transformations::Interpolation};
 use leptess::LepTess;
 
-use crate::{Args, Result};
+use crate::{Args, Result, extractor::io::Dpi};
 
 mod alpha_channel;
 mod detection;
@@ -92,7 +92,7 @@ impl BlobExtractor {
     }
 
     /// Decide image output DPI from detected input image metadata
-    fn decide_output_dpi(&self, maybe_dpi: Option<(u32, u32)>) -> (u32, u32) {
+    fn decide_output_dpi(&self, maybe_dpi: Option<Dpi>) -> Dpi {
         match maybe_dpi {
             Some(dpi) => {
                 if self.verbose {
@@ -116,7 +116,7 @@ impl BlobExtractor {
     fn remove_chroma_key_color_from_image(
         &self,
         image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
-        dpi: (u32, u32),
+        dpi: Dpi,
     ) -> Result<()> {
         let width = image.width();
         let height = image.height();
@@ -150,7 +150,7 @@ impl BlobExtractor {
     fn cleanup_and_extract_image_mask(
         &self,
         image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
-        dpi: (u32, u32),
+        dpi: Dpi,
     ) -> Result<image::ImageBuffer<Luma<u8>, Vec<u8>>> {
         let mut image_mask = alpha_channel::extract(image);
         if self.save_intermediary_images {
@@ -174,7 +174,7 @@ impl BlobExtractor {
         blob_number: u32,
         blob: &image::ImageBuffer<Luma<u8>, Vec<u8>>,
         image: &image::ImageBuffer<Rgba<u8>, Vec<u8>>,
-        dpi: (u32, u32),
+        dpi: Dpi,
     ) -> Result<()> {
         if self.save_intermediary_images {
             io::save_luma_image_as(blob, &self.base_path, &format!("mask-{blob_number}-a")[..])?;
