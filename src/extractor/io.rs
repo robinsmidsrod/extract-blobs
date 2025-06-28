@@ -130,11 +130,7 @@ pub(crate) fn save_rgba_image_as(
     encoder.set_color(png::ColorType::Rgba);
     encoder.set_depth(png::BitDepth::Eight);
     // https://www.w3.org/TR/2003/REC-PNG-20031110/#11pHYs
-    encoder.set_pixel_dims(Some(png::PixelDimensions {
-        xppu: dpi.x_in_meters(),
-        yppu: dpi.y_in_meters(),
-        unit: png::Unit::Meter,
-    }));
+    encoder.set_pixel_dims(Some(dpi.into()));
     encoder.write_header()?.write_image_data(&buffer)?;
     println!("{filename}: saved");
     Ok(())

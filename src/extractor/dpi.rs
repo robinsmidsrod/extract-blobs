@@ -1,3 +1,5 @@
+use png::{PixelDimensions, Unit};
+
 /// Pixel density in inches
 #[derive(Debug)]
 pub struct Dpi {
@@ -39,5 +41,15 @@ impl Dpi {
     pub fn y_in_meters(&self) -> u32 {
         // 1 inch = 39.37 cm
         (self.y as f32 * 39.37) as u32
+    }
+}
+
+impl Into<PixelDimensions> for &Dpi {
+    fn into(self) -> PixelDimensions {
+        PixelDimensions {
+            xppu: self.x_in_meters(),
+            yppu: self.y_in_meters(),
+            unit: Unit::Meter,
+        }
     }
 }
