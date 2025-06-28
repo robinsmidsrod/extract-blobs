@@ -54,7 +54,6 @@ fn read_dpi_from_exif(exif_raw: &[u8]) -> Option<(u32, u32)> {
         Value::Rational(vec) => vec.first().map(|value| value.to_f32() as u32),
         _ => return None,
     }?;
-    // println!("EXIF: unit={:?}, xres={:?}, yres={:?}", unit, x_res, y_res);
     // https://www.media.mit.edu/pia/Research/deepview/exif.html#ExifTags
     match unit {
         // 1 means no-unit (aspect ratio)
@@ -78,10 +77,6 @@ fn read_dpi_from_jfif(file_contents: &[u8]) -> Option<(u32, u32)> {
             SegmentKind::Eoi => break,
             // https://en.wikipedia.org/wiki/JPEG_File_Interchange_Format#JFIF_APP0_marker_segment
             SegmentKind::App0Jfif(jfif) => {
-                // println!(
-                //     "JFIF: unit={},x_density={},y_density={}",
-                //     jfif.unit, jfif.x_density, jfif.y_density
-                // );
                 match jfif.unit {
                     // unit=0 means pixel aspect ratio (y:x)
                     0 => return None,
