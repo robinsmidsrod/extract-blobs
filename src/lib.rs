@@ -70,7 +70,7 @@ pub fn run(args: ArgsOs) -> Result<()> {
     for file in &args.files {
         let blob_extractor = BlobExtractor::new(file.to_owned(), &args);
         blob_extractor.process()?;
-        println!("");
+        println!();
     }
     Ok(())
 }

@@ -18,7 +18,7 @@ pub(crate) fn extract_blobs(
         }
         let index = index - 1;
         let blob_option = blobs.get_mut(index);
-        if let None = blob_option {
+        if blob_option.is_none() {
             let blob = ImageBuffer::new(width, height);
             blobs.push(blob);
         };

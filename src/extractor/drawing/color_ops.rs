@@ -7,11 +7,7 @@ pub(crate) fn color_similarity(a: &palette::Srgb<f32>, b: &palette::Srgb<f32>) -
     let lab_b = Lab::from_color(*b);
 
     // Calculate Euclidean distance in Lab space
-    let delta_e =
-        (lab_a.l - lab_b.l).powi(2) + (lab_a.a - lab_b.a).powi(2) + (lab_a.b - lab_b.b).powi(2);
-    let diff = delta_e.sqrt();
-    // println!("Colors {:?} and {:?} has a difference of {}", a, b, diff);
-    diff
+    ((lab_a.l - lab_b.l).powi(2) + (lab_a.a - lab_b.a).powi(2) + (lab_a.b - lab_b.b).powi(2)).sqrt()
 }
 
 /// Convert from image::Rgba color to palette::Srgb color

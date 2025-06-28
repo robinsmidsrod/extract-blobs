@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::Path;
 
 use image::ImageBuffer;
 use image::ImageResult;
@@ -64,12 +64,12 @@ pub(crate) fn compute_center_from_rectangle(rect: &Rect, config: &BlobExtractor)
 pub(crate) fn compute_deskew_angle_for_rectangle(
     image: &ImageBuffer<Luma<u8>, Vec<u8>>,
     config: &BlobExtractor,
-    base_path: &PathBuf,
+    base_path: &Path,
     index: u32,
 ) -> ImageResult<f32> {
     // Detect edges in image
     // NB: I have no idea how low/high thresholds work, but a value of 1.0 for both seems to do the trick
-    let mut image = imageproc::edges::canny(&image, 1.0, 1.0);
+    let mut image = imageproc::edges::canny(image, 1.0, 1.0);
     if config.save_intermediary_images {
         io::save_luma_image_as(&image, base_path, &format!("mask-{index}-b-edges")[..])?;
     }
@@ -143,8 +143,7 @@ pub(crate) fn find_dominant_color(image: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> Rgb
         .sorted_by(|a, b| a.1.cmp(b.1).reverse())
         .collect();
     let dominant_color_tuple = sorted_colors[0];
-    let dominant_color = *dominant_color_tuple.0;
-    dominant_color
+    *dominant_color_tuple.0
 }
 
 /// Return the dominant color in the image as hex #RRGGBB

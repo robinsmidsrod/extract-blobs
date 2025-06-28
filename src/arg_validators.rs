@@ -4,9 +4,9 @@ use image::Rgba;
 pub(crate) fn validate_blur_edge_factor(value: &str) -> Result<f32, String> {
     let num = value
         .parse::<f32>()
-        .map_err(|_| format!("Not a valid floating point number"))?;
+        .map_err(|_| "Not a valid floating point number".to_string())?;
     if num <= 0.0 {
-        return Err(format!("Number must be greater than 0"));
+        return Err("Number must be greater than 0".to_string());
     }
     Ok(num)
 }

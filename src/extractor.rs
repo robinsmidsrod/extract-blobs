@@ -1,7 +1,6 @@
 use std::{
     // ffi::OsString,
     fs,
-    ops::Deref,
     path::{Path, PathBuf},
 };
 
@@ -48,7 +47,7 @@ impl BlobExtractor {
         let base_filename = Path::new(&file).file_stem().unwrap().to_owned();
         let base_path = base_dir.join(&base_filename);
         Self {
-            file: file,
+            file,
             // base_dir,
             // base_filename,
             base_path,
@@ -104,7 +103,7 @@ impl BlobExtractor {
     }
 
     /// Decide image output DPI from detected input image metadata
-    fn decide_output_dpi(self: &Self, maybe_dpi: Option<(u32, u32)>) -> (u32, u32) {
+    fn decide_output_dpi(&self, maybe_dpi: Option<(u32, u32)>) -> (u32, u32) {
         match maybe_dpi {
             Some(dpi) => {
                 if self.verbose {
@@ -126,7 +125,7 @@ impl BlobExtractor {
 
     /// Remove color matching chroma key color by drawing a border and floodfilling with fuzz
     fn remove_chroma_key_color_from_image(
-        self: &Self,
+        &self,
         image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
         dpi: (u32, u32),
     ) -> Result<()> {
@@ -142,7 +141,7 @@ impl BlobExtractor {
             self.border_thickness,
         );
         if self.save_intermediary_images {
-            io::save_rgba_image_as(&image.deref(), &self.base_path, "a-border", dpi)?;
+            io::save_rgba_image_as(image, &self.base_path, "a-border", dpi)?;
         }
         drawing::flood_fill(
             image,
@@ -153,18 +152,18 @@ impl BlobExtractor {
             self.floodfill_fuzz,
         );
         if self.save_intermediary_images {
-            io::save_rgba_image_as(&image.deref(), &self.base_path, "b-floodfilled", dpi)?;
+            io::save_rgba_image_as(image, &self.base_path, "b-floodfilled", dpi)?;
         }
         Ok(())
     }
 
     /// Clean up alpha channel in color image and extract it
     fn cleanup_and_extract_image_mask(
-        self: &Self,
+        &self,
         image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
         dpi: (u32, u32),
     ) -> Result<image::ImageBuffer<Luma<u8>, Vec<u8>>> {
-        let mut image_mask = alpha_channel::extract(&image.deref());
+        let mut image_mask = alpha_channel::extract(image);
         if self.save_intermediary_images {
             io::save_luma_image_as(&image_mask, &self.base_path, "c-mask")?;
         }
@@ -182,26 +181,26 @@ impl BlobExtractor {
 
     /// Process a single blob from the image mask
     fn process_blob(
-        self: &Self,
+        &self,
         blob_number: u32,
         blob: &image::ImageBuffer<Luma<u8>, Vec<u8>>,
         image: &image::ImageBuffer<Rgba<u8>, Vec<u8>>,
         dpi: (u32, u32),
     ) -> Result<()> {
         if self.save_intermediary_images {
-            io::save_luma_image_as(&blob, &self.base_path, &format!("mask-{blob_number}-a")[..])?;
+            io::save_luma_image_as(blob, &self.base_path, &format!("mask-{blob_number}-a")[..])?;
         }
-        let bounding_box = detection::compute_bounding_box(&blob, &self);
-        let center = detection::compute_center_from_rectangle(&bounding_box, &self);
+        let bounding_box = detection::compute_bounding_box(blob, self);
+        let center = detection::compute_center_from_rectangle(&bounding_box, self);
         let deskew_angle = detection::compute_deskew_angle_for_rectangle(
-            &blob,
-            &self,
+            blob,
+            self,
             &self.base_path,
             blob_number,
         )?;
         let black_luma = Luma([0u8]);
         let blob = imageproc::geometric_transformations::rotate(
-            &blob,
+            blob,
             point_to_tuple(center),
             angle_to_radians(deskew_angle),
             Interpolation::Bicubic,
@@ -224,7 +223,7 @@ impl BlobExtractor {
             black_rgba,
         );
         alpha_channel::replace(&mut blob_rgba, &blob);
-        let bounding_box = detection::compute_bounding_box(&blob, &self);
+        let bounding_box = detection::compute_bounding_box(&blob, self);
         let blob_rgba = image::imageops::crop_imm(
             &blob_rgba,
             bounding_box.left() as u32,

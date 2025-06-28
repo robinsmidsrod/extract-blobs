@@ -55,7 +55,7 @@ pub(crate) fn flood_fill(
             continue;
         }
 
-        image.put_pixel(cx as u32, cy as u32, replacement_color.into());
+        image.put_pixel(cx as u32, cy as u32, replacement_color);
 
         let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)];
         for (dx, dy) in directions {
