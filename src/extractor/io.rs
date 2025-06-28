@@ -24,15 +24,15 @@ pub(crate) fn open_image(file: &Path) -> Result<(DynamicImage, Option<(u32, u32)
     let r = BufReader::new(c);
     let image_reader = image::ImageReader::new(r).with_guessed_format()?;
     let mut decoder = image_reader.into_decoder()?;
-    let maybe_exif = decoder.exif_metadata()?;
+    let exif = decoder.exif_metadata()?;
     let image = DynamicImage::from_decoder(decoder)?;
-    let maybe_dpi = read_dpi_from_metadata(file_contents.as_slice(), maybe_exif);
-    Ok((image, maybe_dpi))
+    let dpi = read_dpi_from_metadata(file_contents.as_slice(), exif);
+    Ok((image, dpi))
 }
 
 /// Read pixel density from file metadata
-fn read_dpi_from_metadata(file_contents: &[u8], maybe_exif: Option<Vec<u8>>) -> Option<(u32, u32)> {
-    match maybe_exif {
+fn read_dpi_from_metadata(file_contents: &[u8], exif: Option<Vec<u8>>) -> Option<(u32, u32)> {
+    match exif {
         Some(exif) => read_dpi_from_exif(&exif),
         None => read_dpi_from_jfif(file_contents),
     }
