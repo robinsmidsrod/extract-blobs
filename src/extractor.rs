@@ -1,8 +1,4 @@
-use std::{
-    // ffi::OsString,
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::PathBuf};
 
 use image::{Luma, Rgba};
 use imageproc::{distance_transform::Norm, geometric_transformations::Interpolation};
@@ -18,8 +14,6 @@ mod io;
 
 pub struct BlobExtractor {
     file: PathBuf,
-    // base_dir: PathBuf,
-    // base_filename: OsString,
     base_path: PathBuf,
     chroma_key_color: Rgba<u8>,
     floodfill_fuzz: f32,
@@ -42,14 +36,9 @@ pub struct BlobExtractor {
 
 impl BlobExtractor {
     pub fn new(file: PathBuf, args: &Args) -> Self {
-        // Figure out path stuff
-        let base_dir = Path::new(&file).parent().unwrap().to_owned();
-        let base_filename = Path::new(&file).file_stem().unwrap().to_owned();
-        let base_path = base_dir.join(&base_filename);
+        let base_path = file.parent().unwrap().join(file.file_stem().unwrap());
         Self {
             file,
-            // base_dir,
-            // base_filename,
             base_path,
             chroma_key_color: args.chroma_key_color,
             floodfill_fuzz: args.floodfill_fuzz,
