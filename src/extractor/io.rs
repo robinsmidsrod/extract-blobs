@@ -83,7 +83,12 @@ fn read_dpi_from_jfif(file_contents: &[u8]) -> Option<(u32, u32)> {
                     // unit=1 means pixels per inch (2.54cm)
                     1 => return Some((jfif.x_density as u32, jfif.y_density as u32)),
                     // unit=2 means pixels per centimeter
-                    2 => return None, // TODO
+                    2 => {
+                        return Some((
+                            (jfif.x_density as f32 * 2.54) as u32,
+                            (jfif.y_density as f32 * 2.54) as u32,
+                        ));
+                    }
                     _ => return None,
                 }
             }
