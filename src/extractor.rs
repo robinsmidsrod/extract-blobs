@@ -99,10 +99,7 @@ impl BlobExtractor {
                     println!("{}: detected DPI is {:?}", self.file.display(), dpi);
                 }
                 match self.ignore_detected_dpi {
-                    true => Dpi {
-                        x: self.dpi,
-                        y: self.dpi,
-                    },
+                    true => Dpi::new(self.dpi),
                     false => dpi,
                 }
             }
@@ -110,10 +107,7 @@ impl BlobExtractor {
                 if self.verbose {
                     println!("{}: unable to detect DPI", self.file.display());
                 }
-                Dpi {
-                    x: self.dpi,
-                    y: self.dpi,
-                }
+                Dpi::new(self.dpi)
             }
         }
     }

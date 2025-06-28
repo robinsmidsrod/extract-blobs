@@ -20,10 +20,42 @@ use crate::Result;
 /// Pixel density in inches
 #[derive(Debug)]
 pub struct Dpi {
-    pub x: u32,
-    pub y: u32,
+    x: u32,
+    y: u32,
 }
 
+impl Dpi {
+
+    /// Create instance from single value in inches
+    pub fn new(v: u32) -> Dpi {
+        Dpi { x: v, y: v }
+    }
+
+    /// Create instance from x and y values in inches
+    pub fn from(x: u32, y: u32) -> Dpi {
+        Dpi { x, y }
+    }
+
+    /// Create instance from x and y values in meters
+    pub fn from_centimeter(x: u32, y: u32) -> Dpi {
+        Dpi {
+            x: (x as f32 * 2.54) as u32,
+            y: (y as f32 * 2.54) as u32,
+        }
+    }
+
+    /// Horizontal resultion in meters
+    pub fn x_in_meters(&self) -> u32 {
+        // 1 inch = 39.37 cm
+        (self.x as f32 * 39.37) as u32
+    }
+    /// Vertical resultion in meters
+    pub fn y_in_meters(&self) -> u32 {
+        // 1 inch = 39.37 cm
+        (self.y as f32 * 39.37) as u32
+    }
+
+}
 /// Open image file and include raw EXIF data, if any
 pub(crate) fn open_image(file: &Path) -> Result<(DynamicImage, Option<Dpi>)> {
     let file_contents = std::fs::read(file)?;
@@ -66,12 +98,9 @@ fn read_dpi_from_exif(exif_raw: &[u8]) -> Option<Dpi> {
         // 1 means no-unit (aspect ratio)
         1 => None,
         // 2 means inch
-        2 => Some(Dpi { x: x_res, y: y_res }),
+        2 => Some(Dpi::from(x_res, y_res)),
         // 3 means centimeter
-        3 => Some(Dpi {
-            x: (x_res as f32 * 2.54) as u32,
-            y: (y_res as f32 * 2.54) as u32,
-        }),
+        3 => Some(Dpi::from_centimeter(x_res, y_res)),
         _ => None,
     }
 }
@@ -92,17 +121,14 @@ fn read_dpi_from_jfif(file_contents: &[u8]) -> Option<Dpi> {
                     0 => return None,
                     // unit=1 means pixels per inch (2.54cm)
                     1 => {
-                        return Some(Dpi {
-                            x: jfif.x_density as u32,
-                            y: jfif.y_density as u32,
-                        });
+                        return Some(Dpi::from(jfif.x_density as u32, jfif.y_density as u32));
                     }
                     // unit=2 means pixels per centimeter
                     2 => {
-                        return Some(Dpi {
-                            x: (jfif.x_density as f32 * 2.54) as u32,
-                            y: (jfif.y_density as f32 * 2.54) as u32,
-                        });
+                        return Some(Dpi::from_centimeter(
+                            jfif.x_density as u32,
+                            jfif.y_density as u32,
+                        ));
                     }
                     _ => return None,
                 }
@@ -146,8 +172,8 @@ pub(crate) fn save_rgba_image_as(
     encoder.set_depth(png::BitDepth::Eight);
     // https://www.w3.org/TR/2003/REC-PNG-20031110/#11pHYs
     encoder.set_pixel_dims(Some(png::PixelDimensions {
-        xppu: (dpi.x as f32 * 39.37) as u32, // 1 inch = 39.37 cm
-        yppu: (dpi.y as f32 * 39.37) as u32,
+        xppu: dpi.x_in_meters(),
+        yppu: dpi.y_in_meters(),
         unit: png::Unit::Meter,
     }));
     encoder.write_header()?.write_image_data(&buffer)?;
