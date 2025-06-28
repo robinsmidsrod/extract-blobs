@@ -25,22 +25,27 @@ pub struct Dpi {
 }
 
 impl Dpi {
-
     /// Create instance from single value in inches
-    pub fn new(v: u32) -> Dpi {
-        Dpi { x: v, y: v }
+    pub fn new<T: Copy + Into<u32>>(v: T) -> Dpi {
+        Dpi {
+            x: v.into(),
+            y: v.into(),
+        }
     }
 
     /// Create instance from x and y values in inches
-    pub fn from(x: u32, y: u32) -> Dpi {
-        Dpi { x, y }
+    pub fn from<T: Copy + Into<u32>>(x: T, y: T) -> Dpi {
+        Dpi {
+            x: x.into(),
+            y: y.into(),
+        }
     }
 
     /// Create instance from x and y values in meters
-    pub fn from_centimeter(x: u32, y: u32) -> Dpi {
+    pub fn from_centimeter<T: Copy + Into<u32>>(x: T, y: T) -> Dpi {
         Dpi {
-            x: (x as f32 * 2.54) as u32,
-            y: (y as f32 * 2.54) as u32,
+            x: (x.into() as f32 * 2.54) as u32,
+            y: (y.into() as f32 * 2.54) as u32,
         }
     }
 
@@ -54,7 +59,6 @@ impl Dpi {
         // 1 inch = 39.37 cm
         (self.y as f32 * 39.37) as u32
     }
-
 }
 /// Open image file and include raw EXIF data, if any
 pub(crate) fn open_image(file: &Path) -> Result<(DynamicImage, Option<Dpi>)> {
@@ -121,14 +125,11 @@ fn read_dpi_from_jfif(file_contents: &[u8]) -> Option<Dpi> {
                     0 => return None,
                     // unit=1 means pixels per inch (2.54cm)
                     1 => {
-                        return Some(Dpi::from(jfif.x_density as u32, jfif.y_density as u32));
+                        return Some(Dpi::from(jfif.x_density, jfif.y_density));
                     }
                     // unit=2 means pixels per centimeter
                     2 => {
-                        return Some(Dpi::from_centimeter(
-                            jfif.x_density as u32,
-                            jfif.y_density as u32,
-                        ));
+                        return Some(Dpi::from_centimeter(jfif.x_density, jfif.y_density));
                     }
                     _ => return None,
                 }
