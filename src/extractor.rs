@@ -4,10 +4,12 @@ use image::{Luma, Rgba};
 use imageproc::{distance_transform::Norm, geometric_transformations::Interpolation};
 use leptess::LepTess;
 
-use crate::{Args, Result, extractor::io::Dpi};
+use crate::{Args, Result};
+use dpi::Dpi;
 
 mod alpha_channel;
 mod detection;
+mod dpi;
 mod drawing;
 mod extraction;
 mod io;
