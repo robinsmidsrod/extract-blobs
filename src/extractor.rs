@@ -9,7 +9,7 @@ use image::{Luma, Rgba};
 use imageproc::{distance_transform::Norm, geometric_transformations::Interpolation};
 use leptess::LepTess;
 
-use crate::Args;
+use crate::{Args, Result};
 
 mod alpha_channel;
 mod detection;
@@ -71,7 +71,7 @@ impl BlobExtractor {
             tessdata: args.tessdata.to_owned(),
         }
     }
-    pub fn process(self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn process(self) -> Result<()> {
         // Open image and maybe get pixel density in dots per inch
         let (image, maybe_dpi) = io::open_image(&self.file)?;
 
@@ -129,7 +129,7 @@ impl BlobExtractor {
         self: &Self,
         image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
         dpi: (u32, u32),
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<()> {
         let width = image.width();
         let height = image.height();
         drawing::draw_border(
@@ -163,7 +163,7 @@ impl BlobExtractor {
         self: &Self,
         image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
         dpi: (u32, u32),
-    ) -> Result<image::ImageBuffer<Luma<u8>, Vec<u8>>, Box<dyn std::error::Error>> {
+    ) -> Result<image::ImageBuffer<Luma<u8>, Vec<u8>>> {
         let mut image_mask = alpha_channel::extract(&image.deref());
         if self.save_intermediary_images {
             io::save_luma_image_as(&image_mask, &self.base_path, "c-mask")?;
@@ -187,7 +187,7 @@ impl BlobExtractor {
         blob: &image::ImageBuffer<Luma<u8>, Vec<u8>>,
         image: &image::ImageBuffer<Rgba<u8>, Vec<u8>>,
         dpi: (u32, u32),
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<()> {
         if self.save_intermediary_images {
             io::save_luma_image_as(&blob, &self.base_path, &format!("mask-{blob_number}-a")[..])?;
         }

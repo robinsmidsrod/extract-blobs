@@ -14,10 +14,12 @@ use image::Luma;
 use image::Rgba;
 use jfifdump::SegmentKind;
 
+use crate::Result;
+
 /// Open image file and include raw EXIF data, if any
 pub(crate) fn open_image(
     file: &PathBuf,
-) -> Result<(DynamicImage, Option<(u32, u32)>), Box<dyn std::error::Error>> {
+) -> Result<(DynamicImage, Option<(u32, u32)>)> {
     let file_contents = std::fs::read(file)?;
     let c = Cursor::new(file_contents.as_slice());
     let r = BufReader::new(c);
@@ -132,7 +134,7 @@ pub(crate) fn save_rgba_image_as(
     base_path: &PathBuf,
     suffix: &str,
     dpi: (u32, u32),
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let filename = format!("{}-{}.{}", base_path.display(), suffix, "png");
 
     // Convert image buffer to raw bytes

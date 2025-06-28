@@ -1,3 +1,6 @@
+pub type Result<T> = core::result::Result<T, Error>;
+pub type Error = Box<dyn std::error::Error>;
+
 use std::path::PathBuf;
 
 use clap::Parser;
@@ -62,7 +65,7 @@ struct Args {
     verbose: bool,
 }
 
-pub fn run(args: ArgsOs) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(args: ArgsOs) -> Result<()> {
     let args = Args::parse_from(args);
     for file in &args.files {
         let blob_extractor = BlobExtractor::new(file.to_owned(), &args);
