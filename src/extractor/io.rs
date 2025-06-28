@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::io::BufWriter;
 use std::io::Cursor;
-use std::path::PathBuf;
+use std::path::Path;
 
 use exif::In;
 use exif::Tag;
@@ -17,9 +17,7 @@ use jfifdump::SegmentKind;
 use crate::Result;
 
 /// Open image file and include raw EXIF data, if any
-pub(crate) fn open_image(
-    file: &PathBuf,
-) -> Result<(DynamicImage, Option<(u32, u32)>)> {
+pub(crate) fn open_image(file: &Path) -> Result<(DynamicImage, Option<(u32, u32)>)> {
     let file_contents = std::fs::read(file)?;
     let c = Cursor::new(file_contents.as_slice());
     let r = BufReader::new(c);
@@ -33,16 +31,15 @@ pub(crate) fn open_image(
 
 /// Read pixel density from file metadata
 fn read_dpi_from_metadata(file_contents: &[u8], maybe_exif: Option<Vec<u8>>) -> Option<(u32, u32)> {
-    let dpi = match maybe_exif {
+    match maybe_exif {
         Some(exif) => read_dpi_from_exif(&exif),
         None => read_dpi_from_jfif(file_contents),
-    };
+    }
     // TODO: Support reading PNG pixel density
-    dpi
 }
 
 /// Read pixel density from EXIF header
-fn read_dpi_from_exif(exif_raw: &Vec<u8>) -> Option<(u32, u32)> {
+fn read_dpi_from_exif(exif_raw: &[u8]) -> Option<(u32, u32)> {
     let reader = exif::Reader::new();
     let maybe_exif = reader.read_raw(exif_raw.to_vec());
     let exif = match maybe_exif {
@@ -119,7 +116,7 @@ fn read_dpi_from_jfif(file_contents: &[u8]) -> Option<(u32, u32)> {
 /// Save grayscale image to file with suffix appended before extension
 pub(crate) fn save_luma_image_as(
     img: &ImageBuffer<Luma<u8>, Vec<u8>>,
-    base_path: &PathBuf,
+    base_path: &Path,
     suffix: &str,
 ) -> ImageResult<()> {
     let filename = format!("{}-{}.{}", base_path.display(), suffix, "png");
@@ -131,7 +128,7 @@ pub(crate) fn save_luma_image_as(
 /// Save RGBA image to PNG file with suffix appended before extension (includes pixel density header)
 pub(crate) fn save_rgba_image_as(
     img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
-    base_path: &PathBuf,
+    base_path: &Path,
     suffix: &str,
     dpi: (u32, u32),
 ) -> Result<()> {
