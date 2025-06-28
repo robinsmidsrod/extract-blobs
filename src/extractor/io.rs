@@ -17,7 +17,12 @@ use jfifdump::SegmentKind;
 
 use crate::Result;
 
-pub type Dpi = (u32, u32);
+/// Pixel density in inches
+#[derive(Debug)]
+pub struct Dpi {
+    pub x: u32,
+    pub y: u32,
+}
 
 /// Open image file and include raw EXIF data, if any
 pub(crate) fn open_image(file: &Path) -> Result<(DynamicImage, Option<Dpi>)> {
@@ -61,9 +66,12 @@ fn read_dpi_from_exif(exif_raw: &[u8]) -> Option<Dpi> {
         // 1 means no-unit (aspect ratio)
         1 => None,
         // 2 means inch
-        2 => Some((x_res, y_res)),
+        2 => Some(Dpi { x: x_res, y: y_res }),
         // 3 means centimeter
-        3 => Some(((x_res as f32 * 2.54) as u32, (y_res as f32 * 2.54) as u32)),
+        3 => Some(Dpi {
+            x: (x_res as f32 * 2.54) as u32,
+            y: (y_res as f32 * 2.54) as u32,
+        }),
         _ => None,
     }
 }
@@ -83,13 +91,18 @@ fn read_dpi_from_jfif(file_contents: &[u8]) -> Option<Dpi> {
                     // unit=0 means pixel aspect ratio (y:x)
                     0 => return None,
                     // unit=1 means pixels per inch (2.54cm)
-                    1 => return Some((jfif.x_density as u32, jfif.y_density as u32)),
+                    1 => {
+                        return Some(Dpi {
+                            x: jfif.x_density as u32,
+                            y: jfif.y_density as u32,
+                        });
+                    }
                     // unit=2 means pixels per centimeter
                     2 => {
-                        return Some((
-                            (jfif.x_density as f32 * 2.54) as u32,
-                            (jfif.y_density as f32 * 2.54) as u32,
-                        ));
+                        return Some(Dpi {
+                            x: (jfif.x_density as f32 * 2.54) as u32,
+                            y: (jfif.y_density as f32 * 2.54) as u32,
+                        });
                     }
                     _ => return None,
                 }
@@ -117,7 +130,7 @@ pub(crate) fn save_rgba_image_as(
     img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
     base_path: &Path,
     suffix: &str,
-    dpi: Dpi,
+    dpi: &Dpi,
 ) -> Result<()> {
     let filename = format!("{}-{}.{}", base_path.display(), suffix, "png");
 
@@ -133,8 +146,8 @@ pub(crate) fn save_rgba_image_as(
     encoder.set_depth(png::BitDepth::Eight);
     // https://www.w3.org/TR/2003/REC-PNG-20031110/#11pHYs
     encoder.set_pixel_dims(Some(png::PixelDimensions {
-        xppu: (dpi.0 as f32 * 39.37) as u32, // 1 inch = 39.37 cm
-        yppu: (dpi.1 as f32 * 39.37) as u32,
+        xppu: (dpi.x as f32 * 39.37) as u32, // 1 inch = 39.37 cm
+        yppu: (dpi.y as f32 * 39.37) as u32,
         unit: png::Unit::Meter,
     }));
     encoder.write_header()?.write_image_data(&buffer)?;

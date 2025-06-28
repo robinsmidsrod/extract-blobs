@@ -77,15 +77,15 @@ impl BlobExtractor {
             println!("{}: dominant color is {}", self.file.display(), color);
         }
 
-        self.remove_chroma_key_color_from_image(&mut image_rgba, dpi)?;
-        let image_mask = self.cleanup_and_extract_image_mask(&mut image_rgba, dpi)?;
+        self.remove_chroma_key_color_from_image(&mut image_rgba, &dpi)?;
+        let image_mask = self.cleanup_and_extract_image_mask(&mut image_rgba, &dpi)?;
 
         // Extract individual blobs from the alpha channel
         let blobs = extraction::extract_blobs(&image_mask);
         println!("{}: found {} blobs", self.file.display(), blobs.len());
         for (index, blob) in blobs.iter().enumerate() {
             let blob_number = index as u32 + 1;
-            self.process_blob(blob_number, blob, &image_rgba, dpi)?;
+            self.process_blob(blob_number, blob, &image_rgba, &dpi)?;
         }
 
         Ok(())
@@ -99,7 +99,10 @@ impl BlobExtractor {
                     println!("{}: detected DPI is {:?}", self.file.display(), dpi);
                 }
                 match self.ignore_detected_dpi {
-                    true => (self.dpi, self.dpi),
+                    true => Dpi {
+                        x: self.dpi,
+                        y: self.dpi,
+                    },
                     false => dpi,
                 }
             }
@@ -107,7 +110,10 @@ impl BlobExtractor {
                 if self.verbose {
                     println!("{}: unable to detect DPI", self.file.display());
                 }
-                (self.dpi, self.dpi)
+                Dpi {
+                    x: self.dpi,
+                    y: self.dpi,
+                }
             }
         }
     }
@@ -116,7 +122,7 @@ impl BlobExtractor {
     fn remove_chroma_key_color_from_image(
         &self,
         image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
-        dpi: Dpi,
+        dpi: &Dpi,
     ) -> Result<()> {
         let width = image.width();
         let height = image.height();
@@ -150,7 +156,7 @@ impl BlobExtractor {
     fn cleanup_and_extract_image_mask(
         &self,
         image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
-        dpi: Dpi,
+        dpi: &Dpi,
     ) -> Result<image::ImageBuffer<Luma<u8>, Vec<u8>>> {
         let mut image_mask = alpha_channel::extract(image);
         if self.save_intermediary_images {
@@ -174,7 +180,7 @@ impl BlobExtractor {
         blob_number: u32,
         blob: &image::ImageBuffer<Luma<u8>, Vec<u8>>,
         image: &image::ImageBuffer<Rgba<u8>, Vec<u8>>,
-        dpi: Dpi,
+        dpi: &Dpi,
     ) -> Result<()> {
         if self.save_intermediary_images {
             io::save_luma_image_as(blob, &self.base_path, &format!("mask-{blob_number}-a")[..])?;
