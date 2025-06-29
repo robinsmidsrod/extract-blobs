@@ -44,6 +44,7 @@ impl Dpi {
     }
 }
 
+/// For easily converting into PNG PixelDimensions
 impl From<&Dpi> for PixelDimensions {
     fn from(dpi: &Dpi) -> Self {
         PixelDimensions {
