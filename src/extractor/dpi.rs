@@ -44,11 +44,11 @@ impl Dpi {
     }
 }
 
-impl Into<PixelDimensions> for &Dpi {
-    fn into(self) -> PixelDimensions {
+impl From<&Dpi> for PixelDimensions {
+    fn from(dpi: &Dpi) -> Self {
         PixelDimensions {
-            xppu: self.x_in_meters(),
-            yppu: self.y_in_meters(),
+            xppu: dpi.x_in_meters(),
+            yppu: dpi.y_in_meters(),
             unit: Unit::Meter,
         }
     }
