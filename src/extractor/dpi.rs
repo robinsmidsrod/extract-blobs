@@ -1,3 +1,5 @@
+pub mod decoder;
+
 use png::{PixelDimensions, Unit};
 
 /// Pixel density in inches

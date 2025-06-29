@@ -9,7 +9,7 @@ use dpi::Dpi;
 
 mod alpha_channel;
 mod detection;
-mod dpi;
+pub mod dpi;
 mod drawing;
 mod extraction;
 mod io;
