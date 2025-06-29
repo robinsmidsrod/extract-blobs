@@ -69,7 +69,7 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     // Detect edges in image
     // NB: I have no idea how low/high thresholds work, but a value of 1.0 for both seems to do the trick
     let mut image = imageproc::edges::canny(image, 1.0, 1.0);
-    saver.save_luma_image_as(&image, format!("mask-{index}-b-edges").as_str(), true)?;
+    saver.save_debug_luma_image_as(&image, format!("mask-{index}-b-edges").as_str())?;
 
     // Find lines matching edges
     let options = LineDetectionOptions {
@@ -83,7 +83,7 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     lines.truncate(config.max_lines);
     let grey_luma = Luma([128u8]);
     imageproc::hough::draw_polar_lines_mut(&mut image, &lines[..], grey_luma);
-    saver.save_luma_image_as(&image, format!("mask-{index}-c-lines").as_str(), true)?;
+    saver.save_debug_luma_image_as(&image, format!("mask-{index}-c-lines").as_str())?;
 
     // Rotate lines so that they all point in the same direction
     // Sort all the values from low to high

@@ -133,7 +133,7 @@ impl BlobExtractor {
             height,
             self.border_thickness,
         );
-        saver.save_rgba_image_as(image, "a-border", true)?;
+        saver.save_debug_rgba_image_as(image, "a-border")?;
         drawing::flood_fill(
             image,
             0,
@@ -142,7 +142,7 @@ impl BlobExtractor {
             self.floodfill_color,
             self.floodfill_fuzz,
         );
-        saver.save_rgba_image_as(image, "b-floodfilled", true)?;
+        saver.save_debug_rgba_image_as(image, "b-floodfilled")?;
         Ok(())
     }
 
@@ -153,12 +153,12 @@ impl BlobExtractor {
         saver: &ImageSaver,
     ) -> Result<image::ImageBuffer<Luma<u8>, Vec<u8>>> {
         let mut image_mask = alpha_channel::extract(image);
-        saver.save_luma_image_as(&image_mask, "c-mask", true)?;
+        saver.save_debug_luma_image_as(&image_mask, "c-mask")?;
         imageproc::morphology::erode_mut(&mut image_mask, Norm::L1, self.trim_edges);
         imageproc::morphology::dilate_mut(&mut image_mask, Norm::L1, self.grow_edges);
-        saver.save_luma_image_as(&image_mask, "d-mask-cleaned", true)?;
+        saver.save_debug_luma_image_as(&image_mask, "d-mask-cleaned")?;
         alpha_channel::replace(image, &image_mask);
-        saver.save_rgba_image_as(image, "e-with-mask", true)?;
+        saver.save_debug_rgba_image_as(image, "e-with-mask")?;
         Ok(image_mask)
     }
 
@@ -170,7 +170,7 @@ impl BlobExtractor {
         image: &image::ImageBuffer<Rgba<u8>, Vec<u8>>,
         saver: &ImageSaver,
     ) -> Result<()> {
-        saver.save_luma_image_as(blob, format!("mask-{blob_number}-a").as_str(), true)?;
+        saver.save_debug_luma_image_as(blob, format!("mask-{blob_number}-a").as_str())?;
         let bounding_box = detection::compute_bounding_box(blob, self);
         let center = detection::compute_center_from_rectangle(&bounding_box, self);
         let deskew_angle =
@@ -184,11 +184,7 @@ impl BlobExtractor {
             black_luma,
         );
         let blob = imageproc::filter::gaussian_blur_f32(&blob, self.blur_edge_factor);
-        saver.save_luma_image_as(
-            &blob,
-            format!("mask-{blob_number}-d-deskewed").as_str(),
-            true,
-        )?;
+        saver.save_debug_luma_image_as(&blob, format!("mask-{blob_number}-d-deskewed").as_str())?;
         let black_rgba = Rgba([0, 0, 0, 0]);
         let mut blob_rgba = imageproc::geometric_transformations::rotate(
             image,
@@ -207,7 +203,7 @@ impl BlobExtractor {
             bounding_box.height(),
         )
         .to_image();
-        saver.save_rgba_image_as(&blob_rgba, blob_number.to_string().as_str(), false)?;
+        saver.save_rgba_image_as(&blob_rgba, blob_number.to_string().as_str())?;
         // Extract text from final image using OCR
         let mut lt = LepTess::new(Some(&self.tessdata.to_string_lossy()), &self.ocr_language)?;
         lt.set_variable(leptess::Variable::TesseditPagesegMode, &self.ocr_psm)?;
