@@ -141,9 +141,7 @@ pub(crate) fn find_dominant_color(image: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> Rgb
 }
 
 /// Return the dominant color in the image as hex #RRGGBB
-pub(crate) fn find_dominant_color_hex(
-    image_rgba: &image::ImageBuffer<Rgba<u8>, Vec<u8>>,
-) -> String {
+pub(crate) fn find_dominant_color_hex(image_rgba: &ImageBuffer<Rgba<u8>, Vec<u8>>) -> String {
     format!(
         "#{}",
         find_dominant_color(image_rgba)

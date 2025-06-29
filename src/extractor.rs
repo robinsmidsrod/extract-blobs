@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use image::{Luma, Rgba};
+use image::{ImageBuffer, Luma, Rgba};
 use imageproc::{distance_transform::Norm, geometric_transformations::Interpolation};
 use leptess::LepTess;
 
@@ -119,7 +119,7 @@ impl BlobExtractor {
     /// Remove color matching chroma key color by drawing a border and floodfilling with fuzz
     fn remove_chroma_key_color_from_image(
         &self,
-        image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
+        image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
         saver: &ImageSaver,
     ) -> Result<()> {
         let width = image.width();
@@ -149,9 +149,9 @@ impl BlobExtractor {
     /// Clean up alpha channel in color image and extract it
     fn cleanup_and_extract_image_mask(
         &self,
-        image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
+        image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
         saver: &ImageSaver,
-    ) -> Result<image::ImageBuffer<Luma<u8>, Vec<u8>>> {
+    ) -> Result<ImageBuffer<Luma<u8>, Vec<u8>>> {
         let mut image_mask = alpha_channel::extract(image);
         saver.save_debug_luma_image_as(&image_mask, "c-mask")?;
         imageproc::morphology::erode_mut(&mut image_mask, Norm::L1, self.trim_edges);
@@ -166,8 +166,8 @@ impl BlobExtractor {
     fn process_blob(
         &self,
         blob_number: u32,
-        blob: &image::ImageBuffer<Luma<u8>, Vec<u8>>,
-        image: &image::ImageBuffer<Rgba<u8>, Vec<u8>>,
+        blob: &ImageBuffer<Luma<u8>, Vec<u8>>,
+        image: &ImageBuffer<Rgba<u8>, Vec<u8>>,
         saver: &ImageSaver,
     ) -> Result<()> {
         saver.save_debug_luma_image_as(blob, format!("mask-{blob_number}-a").as_str())?;
