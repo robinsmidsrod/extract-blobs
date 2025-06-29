@@ -15,10 +15,10 @@ use image::Luma;
 use image::Rgba;
 use jfifdump::SegmentKind;
 
-use super::Dpi;
+use super::dpi::Dpi;
 use crate::Result;
 
-/// Open image file and include raw EXIF data, if any
+/// Open image file and decode DPI from file metadata, if any
 pub(crate) fn open_image(file: &Path) -> Result<(DynamicImage, Option<Dpi>)> {
     let file_contents = std::fs::read(file)?;
     let c = Cursor::new(file_contents.as_slice());
