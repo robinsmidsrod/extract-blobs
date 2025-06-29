@@ -6,13 +6,14 @@ use leptess::LepTess;
 
 use crate::{Args, Result};
 use dpi::Dpi;
+use io::ImageSaver;
 
 mod alpha_channel;
 mod detection;
 pub mod dpi;
 mod drawing;
 mod extraction;
-mod io;
+pub mod io;
 
 pub struct BlobExtractor {
     file: PathBuf,
@@ -79,15 +80,16 @@ impl BlobExtractor {
             println!("{}: dominant color is {}", self.file.display(), color);
         }
 
-        self.remove_chroma_key_color_from_image(&mut image_rgba, &dpi)?;
-        let image_mask = self.cleanup_and_extract_image_mask(&mut image_rgba, &dpi)?;
+        let saver = ImageSaver::new(&self.base_path, dpi);
+        self.remove_chroma_key_color_from_image(&mut image_rgba, &saver)?;
+        let image_mask = self.cleanup_and_extract_image_mask(&mut image_rgba, &saver)?;
 
         // Extract individual blobs from the alpha channel
         let blobs = extraction::extract_blobs(&image_mask);
         println!("{}: found {} blobs", self.file.display(), blobs.len());
         for (index, blob) in blobs.iter().enumerate() {
             let blob_number = index as u32 + 1;
-            self.process_blob(blob_number, blob, &image_rgba, &dpi)?;
+            self.process_blob(blob_number, blob, &image_rgba, &saver)?;
         }
 
         Ok(())
@@ -118,7 +120,7 @@ impl BlobExtractor {
     fn remove_chroma_key_color_from_image(
         &self,
         image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
-        dpi: &Dpi,
+        saver: &ImageSaver,
     ) -> Result<()> {
         let width = image.width();
         let height = image.height();
@@ -132,7 +134,7 @@ impl BlobExtractor {
             self.border_thickness,
         );
         if self.save_intermediary_images {
-            io::save_rgba_image_as(image, &self.base_path, "a-border", dpi)?;
+            saver.save_rgba_image_as(image, "a-border")?;
         }
         drawing::flood_fill(
             image,
@@ -143,7 +145,7 @@ impl BlobExtractor {
             self.floodfill_fuzz,
         );
         if self.save_intermediary_images {
-            io::save_rgba_image_as(image, &self.base_path, "b-floodfilled", dpi)?;
+            saver.save_rgba_image_as(image, "b-floodfilled")?;
         }
         Ok(())
     }
@@ -152,7 +154,7 @@ impl BlobExtractor {
     fn cleanup_and_extract_image_mask(
         &self,
         image: &mut image::ImageBuffer<Rgba<u8>, Vec<u8>>,
-        dpi: &Dpi,
+        saver: &ImageSaver,
     ) -> Result<image::ImageBuffer<Luma<u8>, Vec<u8>>> {
         let mut image_mask = alpha_channel::extract(image);
         if self.save_intermediary_images {
@@ -165,7 +167,7 @@ impl BlobExtractor {
         }
         alpha_channel::replace(image, &image_mask);
         if self.save_intermediary_images {
-            io::save_rgba_image_as(&*image, &self.base_path, "e-with-mask", dpi)?;
+            saver.save_rgba_image_as(image, "e-with-mask")?;
         }
         Ok(image_mask)
     }
@@ -176,7 +178,7 @@ impl BlobExtractor {
         blob_number: u32,
         blob: &image::ImageBuffer<Luma<u8>, Vec<u8>>,
         image: &image::ImageBuffer<Rgba<u8>, Vec<u8>>,
-        dpi: &Dpi,
+        saver: &ImageSaver,
     ) -> Result<()> {
         if self.save_intermediary_images {
             io::save_luma_image_as(blob, &self.base_path, &format!("mask-{blob_number}-a")[..])?;
@@ -223,12 +225,7 @@ impl BlobExtractor {
             bounding_box.height(),
         )
         .to_image();
-        io::save_rgba_image_as(
-            &blob_rgba,
-            &self.base_path,
-            &format!("{blob_number}")[..],
-            dpi,
-        )?;
+        saver.save_rgba_image_as(&blob_rgba, blob_number.to_string().as_str())?;
         // Extract text from final image using OCR
         let mut lt = LepTess::new(Some(&self.tessdata.to_string_lossy()), &self.ocr_language)?;
         lt.set_variable(leptess::Variable::TesseditPagesegMode, &self.ocr_psm)?;
