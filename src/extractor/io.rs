@@ -24,7 +24,7 @@ pub(crate) fn open_image(file: &Path) -> Result<(DynamicImage, Option<Dpi>)> {
     let mut decoder = image_reader.into_decoder()?;
     let exif = decoder.exif_metadata()?.unwrap_or_default();
     let image = DynamicImage::from_decoder(decoder)?;
-    let dpi = decoder::read_dpi_from_metadata(file_contents.as_slice(), exif.as_slice());
+    let dpi = decoder::read_from_bytes(file_contents.as_slice(), exif.as_slice());
     Ok((image, dpi))
 }
 

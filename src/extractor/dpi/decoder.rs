@@ -9,7 +9,7 @@ use jfifdump::SegmentKind;
 use super::Dpi;
 
 /// Read pixel density from file metadata
-pub fn read_dpi_from_metadata(file_contents: &[u8], exif: &[u8]) -> Option<Dpi> {
+pub fn read_from_bytes(file_contents: &[u8], exif: &[u8]) -> Option<Dpi> {
     // Use already decoded EXIF data if we have it, or default to using the entire file contents
     let exif = if exif.is_empty() {
         file_contents
