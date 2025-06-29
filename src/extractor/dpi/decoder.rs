@@ -11,11 +11,7 @@ use super::Dpi;
 /// Read pixel density from file metadata
 pub fn read_from_bytes(file_contents: &[u8], exif: &[u8]) -> Option<Dpi> {
     // Use already decoded EXIF data if we have it, or default to using the entire file contents
-    let exif = if exif.is_empty() {
-        file_contents
-    } else {
-        exif
-    };
+    let exif = if exif.is_empty() { file_contents } else { exif };
     // Define functions that can decode DPI information, in priority order
     let funcs: Vec<Box<dyn FnOnce() -> Option<Dpi>>> = vec![
         Box::new(|| read_dpi_from_exif(exif)),
