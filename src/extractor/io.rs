@@ -33,14 +33,16 @@ pub(crate) fn open_image(file: &Path) -> Result<(DynamicImage, Option<Dpi>)> {
 pub struct ImageSaver {
     base_path: PathBuf,
     dpi: Dpi,
+    save_intermediary: bool,
 }
 
 impl ImageSaver {
     /// Construct a new ImageSaver with the specified base path and DPI
-    pub fn new(base_path: &Path, dpi: Dpi) -> Self {
+    pub fn new(base_path: &Path, dpi: Dpi, save_intermediary: bool) -> Self {
         Self {
             base_path: base_path.to_owned(),
             dpi,
+            save_intermediary,
         }
     }
     /// Save RGBA image to PNG file with suffix appended before extension (includes pixel density header)
@@ -48,7 +50,12 @@ impl ImageSaver {
         &self,
         img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
         suffix: &str,
+        is_intermediary: bool,
     ) -> Result<()> {
+        // Do nothing if image is defined as intermediary and we've been asked to not save intermediaries
+        if is_intermediary && !self.save_intermediary {
+            return Ok(());
+        }
         let filename = format!("{}-{}.{}", self.base_path.display(), suffix, "png");
 
         // Convert image buffer to raw bytes
@@ -73,7 +80,12 @@ impl ImageSaver {
         &self,
         img: &ImageBuffer<Luma<u8>, Vec<u8>>,
         suffix: &str,
+        is_intermediary: bool,
     ) -> ImageResult<()> {
+        // Do nothing if image is defined as intermediary and we've been asked to not save intermediaries
+        if is_intermediary && !self.save_intermediary {
+            return Ok(());
+        }
         let filename = format!("{}-{}.{}", self.base_path.display(), suffix, "png");
         img.save(&filename)?;
         println!("{filename}: saved");
