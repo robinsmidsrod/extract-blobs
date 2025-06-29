@@ -158,12 +158,12 @@ impl BlobExtractor {
     ) -> Result<image::ImageBuffer<Luma<u8>, Vec<u8>>> {
         let mut image_mask = alpha_channel::extract(image);
         if self.save_intermediary_images {
-            io::save_luma_image_as(&image_mask, &self.base_path, "c-mask")?;
+            saver.save_luma_image_as(&image_mask, "c-mask")?;
         }
         imageproc::morphology::erode_mut(&mut image_mask, Norm::L1, self.trim_edges);
         imageproc::morphology::dilate_mut(&mut image_mask, Norm::L1, self.grow_edges);
         if self.save_intermediary_images {
-            io::save_luma_image_as(&image_mask, &self.base_path, "d-mask-cleaned")?;
+            saver.save_luma_image_as(&image_mask, "d-mask-cleaned")?;
         }
         alpha_channel::replace(image, &image_mask);
         if self.save_intermediary_images {
@@ -181,16 +181,12 @@ impl BlobExtractor {
         saver: &ImageSaver,
     ) -> Result<()> {
         if self.save_intermediary_images {
-            io::save_luma_image_as(blob, &self.base_path, &format!("mask-{blob_number}-a")[..])?;
+            saver.save_luma_image_as(blob, format!("mask-{blob_number}-a").as_str())?;
         }
         let bounding_box = detection::compute_bounding_box(blob, self);
         let center = detection::compute_center_from_rectangle(&bounding_box, self);
-        let deskew_angle = detection::compute_deskew_angle_for_rectangle(
-            blob,
-            self,
-            &self.base_path,
-            blob_number,
-        )?;
+        let deskew_angle =
+            detection::compute_deskew_angle_for_rectangle(blob, self, saver, blob_number)?;
         let black_luma = Luma([0u8]);
         let blob = imageproc::geometric_transformations::rotate(
             blob,
@@ -201,11 +197,7 @@ impl BlobExtractor {
         );
         let blob = imageproc::filter::gaussian_blur_f32(&blob, self.blur_edge_factor);
         if self.save_intermediary_images {
-            io::save_luma_image_as(
-                &blob,
-                &self.base_path,
-                &format!("mask-{blob_number}-d-deskewed")[..],
-            )?;
+            saver.save_luma_image_as(&blob, format!("mask-{blob_number}-d-deskewed").as_str())?;
         }
         let black_rgba = Rgba([0, 0, 0, 0]);
         let mut blob_rgba = imageproc::geometric_transformations::rotate(

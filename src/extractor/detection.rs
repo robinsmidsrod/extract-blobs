@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::path::Path;
 
 use image::ImageBuffer;
 use image::ImageResult;
@@ -11,7 +10,7 @@ use imageproc::point::Point;
 use imageproc::rect::Rect;
 use itertools::Itertools; // for sorted() and join() iterator function
 
-use super::io;
+use super::io::ImageSaver;
 use crate::BlobExtractor;
 
 /// Compute bounding box from grayscale image, any non-black color is considered part of the bounding box
@@ -64,14 +63,14 @@ pub(crate) fn compute_center_from_rectangle(rect: &Rect, config: &BlobExtractor)
 pub(crate) fn compute_deskew_angle_for_rectangle(
     image: &ImageBuffer<Luma<u8>, Vec<u8>>,
     config: &BlobExtractor,
-    base_path: &Path,
+    saver: &ImageSaver,
     index: u32,
 ) -> ImageResult<f32> {
     // Detect edges in image
     // NB: I have no idea how low/high thresholds work, but a value of 1.0 for both seems to do the trick
     let mut image = imageproc::edges::canny(image, 1.0, 1.0);
     if config.save_intermediary_images {
-        io::save_luma_image_as(&image, base_path, &format!("mask-{index}-b-edges")[..])?;
+        saver.save_luma_image_as(&image, format!("mask-{index}-b-edges").as_str())?;
     }
 
     // Find lines matching edges
@@ -87,7 +86,7 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     let grey_luma = Luma([128u8]);
     imageproc::hough::draw_polar_lines_mut(&mut image, &lines[..], grey_luma);
     if config.save_intermediary_images {
-        io::save_luma_image_as(&image, base_path, &format!("mask-{index}-c-lines")[..])?;
+        saver.save_luma_image_as(&image, format!("mask-{index}-c-lines").as_str())?;
     }
 
     // Rotate lines so that they all point in the same direction

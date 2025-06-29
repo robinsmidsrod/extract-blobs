@@ -35,18 +35,6 @@ pub struct ImageSaver {
     dpi: Dpi,
 }
 
-/// Save grayscale image to file with suffix appended before extension
-pub(crate) fn save_luma_image_as(
-    img: &ImageBuffer<Luma<u8>, Vec<u8>>,
-    base_path: &Path,
-    suffix: &str,
-) -> ImageResult<()> {
-    let filename = format!("{}-{}.{}", base_path.display(), suffix, "png");
-    img.save(&filename)?;
-    println!("{filename}: saved");
-    Ok(())
-}
-
 impl ImageSaver {
     /// Construct a new ImageSaver with the specified base path and DPI
     pub fn new(base_path: &Path, dpi: Dpi) -> Self {
@@ -76,6 +64,18 @@ impl ImageSaver {
         // https://www.w3.org/TR/2003/REC-PNG-20031110/#11pHYs
         encoder.set_pixel_dims(Some((&self.dpi).into()));
         encoder.write_header()?.write_image_data(&buffer)?;
+        println!("{filename}: saved");
+        Ok(())
+    }
+
+    /// Save grayscale image to file with suffix appended before extension
+    pub fn save_luma_image_as(
+        &self,
+        img: &ImageBuffer<Luma<u8>, Vec<u8>>,
+        suffix: &str,
+    ) -> ImageResult<()> {
+        let filename = format!("{}-{}.{}", self.base_path.display(), suffix, "png");
+        img.save(&filename)?;
         println!("{filename}: saved");
         Ok(())
     }
