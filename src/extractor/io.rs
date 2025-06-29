@@ -8,7 +8,6 @@ use std::path::PathBuf;
 use image::DynamicImage;
 use image::ImageBuffer;
 use image::ImageDecoder;
-use image::ImageResult;
 use image::Luma;
 use image::Rgba;
 
@@ -75,7 +74,7 @@ impl ImageSaver {
         &self,
         img: &ImageBuffer<Luma<u8>, Vec<u8>>,
         suffix: &str,
-    ) -> ImageResult<()> {
+    ) -> Result<()> {
         let filename = format!("{}-{}.{}", self.base_path.display(), suffix, "png");
         img.save(&filename)?;
         println!("{filename}: saved");
@@ -101,7 +100,7 @@ impl ImageSaver {
         &self,
         img: &ImageBuffer<Luma<u8>, Vec<u8>>,
         suffix: &str,
-    ) -> ImageResult<()> {
+    ) -> Result<()> {
         if self.is_debugging {
             return self.save_luma_image_as(img, suffix);
         }

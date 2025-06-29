@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use image::ImageBuffer;
-use image::ImageResult;
 use image::Luma;
 use image::Pixel; // for to_rgb() method
 use image::Rgba;
@@ -11,7 +10,7 @@ use imageproc::rect::Rect;
 use itertools::Itertools; // for sorted() and join() iterator function
 
 use super::io::ImageSaver;
-use crate::BlobExtractor;
+use crate::{BlobExtractor, Result};
 
 /// Compute bounding box from grayscale image, any non-black color is considered part of the bounding box
 pub(crate) fn compute_bounding_box(
@@ -65,7 +64,7 @@ pub(crate) fn compute_deskew_angle_for_rectangle(
     config: &BlobExtractor,
     saver: &ImageSaver,
     index: u32,
-) -> ImageResult<f32> {
+) -> Result<f32> {
     // Detect edges in image
     // NB: I have no idea how low/high thresholds work, but a value of 1.0 for both seems to do the trick
     let mut image = imageproc::edges::canny(image, 1.0, 1.0);
