@@ -33,11 +33,27 @@ pub(crate) fn open_image(file: &Path) -> Result<(DynamicImage, Option<Dpi>)> {
 
 /// Read pixel density from file metadata
 fn read_dpi_from_metadata(file_contents: &[u8], exif: Option<Vec<u8>>) -> Option<Dpi> {
-    match exif {
-        Some(exif) => read_dpi_from_exif(&exif),
-        None => read_dpi_from_jfif(file_contents),
+    // Use already decoded EXIF data if we have it, or default to using the entire file contents
+    let exif = exif.unwrap_or_default();
+    let exif = if exif.is_empty() {
+        file_contents
+    } else {
+        exif.as_slice()
+    };
+    // Define functions that can decode DPI information, in priority order
+    let funcs: Vec<Box<dyn FnOnce() -> Option<Dpi>>> = vec![
+        Box::new(|| read_dpi_from_exif(exif)),
+        Box::new(|| read_dpi_from_jfif(file_contents)),
+        // TODO: Support reading PNG pixel density
+    ];
+    // Try to decode pixel density, take the first one that has something
+    for func in funcs {
+        let dpi = func();
+        if dpi.is_some() {
+            return dpi;
+        }
     }
-    // TODO: Support reading PNG pixel density
+    None
 }
 
 /// Read pixel density from EXIF header
