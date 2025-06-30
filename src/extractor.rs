@@ -73,24 +73,24 @@ impl BlobExtractor {
             println!("{}: using DPI {:?}", self.file.display(), dpi);
         }
 
-        let mut image_rgba = image.to_rgba8();
+        let mut image = image.to_rgba8();
 
         // Detect dominant color in image
         if self.verbose {
-            let color = detection::find_dominant_color_hex(&image_rgba);
+            let color = detection::find_dominant_color_hex(&image);
             println!("{}: dominant color is {}", self.file.display(), color);
         }
 
         let saver = ImageSaver::new(&self.base_path, dpi, self.save_intermediary_images);
-        self.remove_chroma_key_color_from_image(&mut image_rgba, &saver)?;
-        let image_mask = self.cleanup_and_extract_image_mask(&mut image_rgba, &saver)?;
+        self.remove_chroma_key_color_from_image(&mut image, &saver)?;
+        let image_mask = self.cleanup_and_extract_image_mask(&mut image, &saver)?;
 
         // Extract individual blobs from the alpha channel
         let blobs = extraction::extract_blobs(&image_mask);
         println!("{}: found {} blobs", self.file.display(), blobs.len());
         for (index, blob) in blobs.iter().enumerate() {
             let blob_number = index as u32 + 1;
-            self.process_blob(blob_number, blob, &image_rgba, &saver)?;
+            self.process_blob(blob_number, blob, &image, &saver)?;
         }
 
         Ok(())
@@ -187,24 +187,24 @@ impl BlobExtractor {
         let blob = imageproc::filter::gaussian_blur_f32(&blob, self.blur_edge_factor);
         saver.save_debug_luma_image_as(&blob, format!("mask-{blob_number}-d-deskewed").as_str())?;
         let black_rgba = Rgba([0, 0, 0, 0]);
-        let mut blob_rgba = imageproc::geometric_transformations::rotate(
+        let mut image = imageproc::geometric_transformations::rotate(
             image,
             point_to_tuple(center),
             angle_to_radians(deskew_angle),
             Interpolation::Bicubic,
             black_rgba,
         );
-        alpha_channel::replace(&mut blob_rgba, &blob);
+        alpha_channel::replace(&mut image, &blob);
         let bounding_box = detection::compute_bounding_box(&blob, self);
-        let blob_rgba = image::imageops::crop_imm(
-            &blob_rgba,
+        let image = image::imageops::crop_imm(
+            &image,
             bounding_box.left() as u32,
             bounding_box.top() as u32,
             bounding_box.width(),
             bounding_box.height(),
         )
         .to_image();
-        saver.save_rgba_image_as(&blob_rgba, blob_number.to_string().as_str())?;
+        saver.save_rgba_image_as(&image, blob_number.to_string().as_str())?;
         // Perform OCR on blob
         let mut te =
             TextExtractor::new(&self.ocr_language, &self.ocr_psm, self.tessdata.as_path())?;
