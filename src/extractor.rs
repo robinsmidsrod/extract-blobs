@@ -1,12 +1,12 @@
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 
 use image::{ImageBuffer, Luma, Rgba};
 use imageproc::{distance_transform::Norm, geometric_transformations::Interpolation};
-use leptess::LepTess;
 
 use crate::{Args, Result};
 use dpi::Dpi;
 use io::ImageSaver;
+use ocr::TextExtractor;
 
 mod alpha_channel;
 mod detection;
@@ -14,6 +14,7 @@ pub mod dpi;
 mod drawing;
 mod extraction;
 pub mod io;
+mod ocr;
 
 pub struct BlobExtractor {
     file: PathBuf,
@@ -204,16 +205,14 @@ impl BlobExtractor {
         )
         .to_image();
         saver.save_rgba_image_as(&blob_rgba, blob_number.to_string().as_str())?;
-        // Extract text from final image using OCR
-        let mut lt = LepTess::new(Some(&self.tessdata.to_string_lossy()), &self.ocr_language)?;
-        lt.set_variable(leptess::Variable::TesseditPagesegMode, &self.ocr_psm)?;
-        lt.set_variable(leptess::Variable::PreserveInterwordSpaces, "1")?;
-        let img_filename = format!("{}-{}.{}", self.base_path.display(), blob_number, "png");
-        let text_filename = format!("{}-{}.{}", self.base_path.display(), blob_number, "txt");
-        lt.set_image(&img_filename)?;
-        let text = lt.get_utf8_text()?;
-        fs::write(&text_filename, &text)?;
-        println!("{}: saved OCR text - {} bytes", &text_filename, &text.len());
+        // Perform OCR on blob
+        let mut te =
+            TextExtractor::new(&self.ocr_language, &self.ocr_psm, self.tessdata.as_path())?;
+        te.extract_and_save_text(
+            &PathBuf::from(format!("{}-{blob_number}.png", self.base_path.display())),
+            &PathBuf::from(format!("{}-{blob_number}.txt", self.base_path.display())),
+        )?;
+
         Ok(())
     }
 }
