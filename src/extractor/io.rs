@@ -50,22 +50,25 @@ impl ImageSaver {
         img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
         suffix: &str,
     ) -> Result<()> {
-        let filename = format!("{}-{}.{}", self.base_path.display(), suffix, "png");
+
+        let filename = self.compute_path(suffix);
+        let file = File::create(&filename)?;
+        let mut encoder = png::Encoder::new(BufWriter::new(file), img.width(), img.height());
+
+        // Set image metadata
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        // https://www.w3.org/TR/2003/REC-PNG-20031110/#11pHYs
+        encoder.set_pixel_dims(Some((&self.dpi).into()));
 
         // Convert image buffer to raw bytes
         let mut buffer = Vec::new();
         for pixel in img.pixels() {
             buffer.extend_from_slice(&pixel.0);
         }
-
-        let file = File::create(&filename)?;
-        let mut encoder = png::Encoder::new(BufWriter::new(file), img.width(), img.height());
-        encoder.set_color(png::ColorType::Rgba);
-        encoder.set_depth(png::BitDepth::Eight);
-        // https://www.w3.org/TR/2003/REC-PNG-20031110/#11pHYs
-        encoder.set_pixel_dims(Some((&self.dpi).into()));
         encoder.write_header()?.write_image_data(&buffer)?;
-        println!("{filename}: saved");
+
+        println!("{}: saved", filename.display());
         Ok(())
     }
 
@@ -75,9 +78,9 @@ impl ImageSaver {
         img: &ImageBuffer<Luma<u8>, Vec<u8>>,
         suffix: &str,
     ) -> Result<()> {
-        let filename = format!("{}-{}.{}", self.base_path.display(), suffix, "png");
+        let filename = self.compute_path(suffix);
         img.save(&filename)?;
-        println!("{filename}: saved");
+        println!("{}: saved", filename.display());
         Ok(())
     }
 
@@ -105,5 +108,9 @@ impl ImageSaver {
             return self.save_luma_image_as(img, suffix);
         }
         Ok(())
+    }
+    /// Compute full file path from base path and suffix
+    pub fn compute_path(&self, suffix: &str) -> PathBuf {
+        format!("{}-{suffix}.png", self.base_path.display()).into()
     }
 }
