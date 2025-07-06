@@ -208,11 +208,18 @@ impl BlobExtractor {
         // Perform OCR on blob
         let mut te =
             TextExtractor::new(&self.ocr_language, &self.ocr_psm, self.tessdata.as_path())?;
-        te.extract_and_save_text(
-            &PathBuf::from(format!("{}-{blob_number}.png", self.base_path.display())),
-            &PathBuf::from(format!("{}-{blob_number}.txt", self.base_path.display())),
-        )?;
-
+        let input_image_filename =
+            PathBuf::from(format!("{}-{blob_number}.png", self.base_path.display()));
+        let text = if self.save_intermediary_images {
+            te.extract_and_save_text_from_file(
+                &input_image_filename,
+                &PathBuf::from(format!("{}-{blob_number}.txt", self.base_path.display())),
+            )
+        } else {
+            te.extract_text_from_file(&input_image_filename)
+        }?;
+        // Overwrite output image file and include OCR text
+        saver.save_rgba_image_with_text_as(&image, blob_number.to_string().as_str(), &text)?;
         Ok(())
     }
 }

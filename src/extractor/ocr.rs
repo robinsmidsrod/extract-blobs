@@ -21,19 +21,21 @@ impl TextExtractor {
 
         Ok(Self { lt })
     }
+
     /// Extract text using OCR from specified image file
-    pub(crate) fn extract_text(&mut self, image_filename: &Path) -> Result<String> {
+    pub(crate) fn extract_text_from_file(&mut self, image_filename: &Path) -> Result<String> {
         self.lt.set_image(image_filename)?;
         Ok(self.lt.get_utf8_text()?)
     }
+
     /// Save text using OCR from specified image file into specified text file
     /// Returns text for further processing
-    pub(crate) fn extract_and_save_text(
+    pub(crate) fn extract_and_save_text_from_file(
         &mut self,
         input_image_filename: &Path,
         output_text_filename: &Path,
     ) -> Result<String> {
-        let text = self.extract_text(input_image_filename)?;
+        let text = self.extract_text_from_file(input_image_filename)?;
         fs::write(output_text_filename, &text)?;
         println!(
             "{}: saved OCR text - {} bytes",

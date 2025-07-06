@@ -50,7 +50,6 @@ impl ImageSaver {
         img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
         suffix: &str,
     ) -> Result<()> {
-
         let filename = self.compute_path(suffix);
         let file = File::create(&filename)?;
         let mut encoder = png::Encoder::new(BufWriter::new(file), img.width(), img.height());
@@ -60,6 +59,44 @@ impl ImageSaver {
         encoder.set_depth(png::BitDepth::Eight);
         // https://www.w3.org/TR/2003/REC-PNG-20031110/#11pHYs
         encoder.set_pixel_dims(Some((&self.dpi).into()));
+
+        // Convert image buffer to raw bytes
+        let mut buffer = Vec::new();
+        for pixel in img.pixels() {
+            buffer.extend_from_slice(&pixel.0);
+        }
+        encoder.write_header()?.write_image_data(&buffer)?;
+
+        println!("{}: saved", filename.display());
+        Ok(())
+    }
+
+    /// Save RGBA image to PNG file with suffix appended before extension (includes pixel density header and text blocks)
+    pub fn save_rgba_image_with_text_as(
+        &self,
+        img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
+        suffix: &str,
+        text: &str,
+    ) -> Result<()> {
+        let filename = self.compute_path(suffix);
+        let file = File::create(&filename)?;
+
+        // Set extended image metadata
+        let mut info = png::Info::default();
+        info.width = img.width();
+        info.height = img.height();
+        info.color_type = png::ColorType::Rgba;
+        info.compression = png::Compression::Best;
+        // https://www.w3.org/TR/2003/REC-PNG-20031110/#11pHYs
+        info.pixel_dims = Some((&self.dpi).into());
+        info.utf8_text = vec![png::text_metadata::ITXtChunk::new(
+            "Content".to_owned(),
+            text.to_owned(),
+        )];
+        // TODO: Figure out a crate that can generate EXIF chunk with comment
+        info.exif_metadata = None;
+
+        let encoder = png::Encoder::with_info(BufWriter::new(file), info)?;
 
         // Convert image buffer to raw bytes
         let mut buffer = Vec::new();
