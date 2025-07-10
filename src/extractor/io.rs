@@ -10,6 +10,8 @@ use image::ImageBuffer;
 use image::ImageDecoder;
 use image::Luma;
 use image::Rgba;
+use little_exif::exif_tag::ExifTag;
+use little_exif::metadata::Metadata;
 
 use super::dpi::Dpi;
 use super::dpi::decoder;
@@ -105,7 +107,15 @@ impl ImageSaver {
         }
         encoder.write_header()?.write_image_data(&buffer)?;
 
-        println!("{}: saved", filename.display());
+        // Write text content as EXIF image description as well
+        let mut exif = Metadata::new();
+        exif.set_tag(ExifTag::Software(
+            format!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
+        ));
+        exif.set_tag(ExifTag::ImageDescription(text.to_owned()));
+        exif.write_to_file(&filename)?;
+
+        println!("{}: saved with metadata", filename.display());
         Ok(())
     }
 
